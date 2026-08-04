@@ -1,4 +1,4 @@
-import type { Company, CreateCompanyPayload } from '../types'
+import type { Company, CreateCompanyPayload, UpdateCompanyPayload } from '../types'
 import { api, unwrapData } from './api'
 
 export async function getCompanies(): Promise<Company[]> {
@@ -11,4 +11,12 @@ export async function getCompany(id: number): Promise<Company> {
 
 export async function createCompany(payload: CreateCompanyPayload): Promise<Company> {
   return unwrapData(api.post('/companies', payload))
+}
+
+export async function updateCompany(id: number, payload: UpdateCompanyPayload): Promise<Company> {
+  return unwrapData(api.put(`/companies/${id}`, payload))
+}
+
+export async function deleteCompany(id: number): Promise<void> {
+  await unwrapData(api.delete(`/companies/${id}`))
 }

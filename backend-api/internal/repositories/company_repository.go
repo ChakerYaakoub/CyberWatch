@@ -64,12 +64,38 @@ func (r *CompanyRepository) Update(company *models.Company) error {
 }
 
 func (r *CompanyRepository) Delete(id uint) error {
-	result := r.db.Delete(&models.Company{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return ErrNotFound
-	}
-	return nil
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var company models.Company
+		if err := tx.First(&company, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+
+		var scanIDs []uint
+		if err := tx.Model(&models.Scan{}).
+			Where("company_id = ?", id).
+			Pluck("id", &scanIDs).Error; err != nil {
+			return err
+		}
+
+		if len(scanIDs) > 0 {
+			if err := tx.Where("scan_id IN ?", scanIDs).Delete(&models.Vulnerability{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("company_id = ?", id).Delete(&models.Scan{}).Error; err != nil {
+				return err
+			}
+		}
+
+		result := tx.Delete(&models.Company{}, id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
 }

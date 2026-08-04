@@ -1,6 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCompany, getCompanies, getCompany } from '../services/company.service'
-import type { CreateCompanyPayload } from '../types'
+import {
+  createCompany,
+  deleteCompany,
+  getCompanies,
+  getCompany,
+  updateCompany,
+} from '../services/company.service'
+import type { CreateCompanyPayload, UpdateCompanyPayload } from '../types'
+
+function invalidateCompanyQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ['companies'] })
+  void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+  void queryClient.invalidateQueries({ queryKey: ['scans'] })
+}
 
 export function useCompanies() {
   return useQuery({
@@ -22,9 +34,25 @@ export function useCreateCompany() {
 
   return useMutation({
     mutationFn: (payload: CreateCompanyPayload) => createCompany(payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['companies'] })
-      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-    },
+    onSuccess: () => invalidateCompanyQueries(queryClient),
+  })
+}
+
+export function useUpdateCompany() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateCompanyPayload }) =>
+      updateCompany(id, payload),
+    onSuccess: () => invalidateCompanyQueries(queryClient),
+  })
+}
+
+export function useDeleteCompany() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => deleteCompany(id),
+    onSuccess: () => invalidateCompanyQueries(queryClient),
   })
 }

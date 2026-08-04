@@ -10,3 +10,5 @@ export interface CreateCompanyPayload {
   name: string
   domain: string
 }
+
+export type UpdateCompanyPayload = CreateCompanyPayload

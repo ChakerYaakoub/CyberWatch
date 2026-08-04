@@ -170,6 +170,12 @@ func TestDeleteCompany(t *testing.T) {
 	var company models.Company
 	decodeData(t, createRes.Body, &company)
 
+	scanReq := httptest.NewRequest(http.MethodPost, "/api/scans", bytes.NewBufferString(fmt.Sprintf(`{"companyId":%d}`, company.ID)))
+	scanReq.Header.Set("Content-Type", "application/json")
+	scanRes := httptest.NewRecorder()
+	router.ServeHTTP(scanRes, scanReq)
+	require.Equal(t, http.StatusCreated, scanRes.Code)
+
 	deleteReq := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/companies/%d", company.ID), nil)
 	deleteRes := httptest.NewRecorder()
 	router.ServeHTTP(deleteRes, deleteReq)

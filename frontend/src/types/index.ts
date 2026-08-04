@@ -1,5 +1,5 @@
 export type { ApiResponse, ApiErrorBody } from './api'
-export type { Company, CreateCompanyPayload } from './company'
+export type { Company, CreateCompanyPayload, UpdateCompanyPayload } from './company'
 export type {
   Scan,
   ScanStatus,
