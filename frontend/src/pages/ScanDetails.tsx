@@ -19,14 +19,15 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { Link, useParams } from 'react-router-dom'
-import { EmptyState, formatDate, LoadingState } from '../components/common/PageStates'
+import { EmptyState, ErrorState, formatDate, LoadingState } from '../components/common/PageStates'
 import { RiskBadge, StatusBadge } from '../components/common/StatusBadge'
-import { useScan } from '../hooks/useApi'
-import type { Finding, RiskLevel } from '../types'
+import { useScan } from '../hooks/useScans'
+import { getErrorMessage } from '../services/api'
+import type { FindingView, RiskLevel } from '../types'
 
 const severityOrder: RiskLevel[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
-function FindingItem({ finding }: { finding: Finding }) {
+function FindingItem({ finding }: { finding: FindingView }) {
   return (
     <Box
       borderWidth="1px"
@@ -53,10 +54,14 @@ function FindingItem({ finding }: { finding: Finding }) {
 
 export function ScanDetails() {
   const { id } = useParams<{ id: string }>()
-  const { data: scan, isLoading } = useScan(id)
+  const { data: scan, isLoading, error, isError } = useScan(id)
 
   if (isLoading) {
     return <LoadingState label="Loading scan analysis…" />
+  }
+
+  if (isError) {
+    return <ErrorState message={getErrorMessage(error)} />
   }
 
   if (!scan) {
@@ -76,7 +81,12 @@ export function ScanDetails() {
 
   return (
     <VStack align="stretch" spacing={6}>
-      <Flex justify="space-between" align={{ base: 'stretch', md: 'center' }} direction={{ base: 'column', md: 'row' }} gap={3}>
+      <Flex
+        justify="space-between"
+        align={{ base: 'stretch', md: 'center' }}
+        direction={{ base: 'column', md: 'row' }}
+        gap={3}
+      >
         <Stack spacing={1}>
           <Text fontSize="sm" color="cyber.muted">
             Scan Analysis
@@ -130,7 +140,9 @@ export function ScanDetails() {
               value={scan.securityScore}
               size="sm"
               borderRadius="full"
-              colorScheme={scan.securityScore >= 70 ? 'green' : scan.securityScore >= 50 ? 'yellow' : 'red'}
+              colorScheme={
+                scan.securityScore >= 70 ? 'green' : scan.securityScore >= 50 ? 'yellow' : 'red'
+              }
               bg="cyber.border"
             />
           </CardBody>

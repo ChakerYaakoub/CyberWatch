@@ -38,6 +38,11 @@ export function RiskCharts({ evolution, distribution }: RiskChartsProps) {
           </Text>
         </CardHeader>
         <CardBody>
+          {evolution.length === 0 ? (
+            <Text color="cyber.muted" fontSize="sm" py={16} textAlign="center">
+              No completed scans yet
+            </Text>
+          ) : (
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={evolution}>
               <defs>
@@ -67,6 +72,7 @@ export function RiskCharts({ evolution, distribution }: RiskChartsProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </CardBody>
       </Card>
 
@@ -78,6 +84,11 @@ export function RiskCharts({ evolution, distribution }: RiskChartsProps) {
           </Text>
         </CardHeader>
         <CardBody>
+          {distribution.every((item) => item.count === 0) ? (
+            <Text color="cyber.muted" fontSize="sm" py={16} textAlign="center">
+              No vulnerabilities yet
+            </Text>
+          ) : (
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={distribution}>
               <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" />
@@ -101,6 +112,7 @@ export function RiskCharts({ evolution, distribution }: RiskChartsProps) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
         </CardBody>
       </Card>
     </SimpleGrid>

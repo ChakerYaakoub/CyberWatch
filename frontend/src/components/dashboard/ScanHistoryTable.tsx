@@ -14,12 +14,12 @@ import {
   Tr,
 } from '@chakra-ui/react'
 import { Link } from 'react-router-dom'
-import type { Scan } from '../../types'
+import type { ScanListItem } from '../../types'
 import { formatDate } from '../common/PageStates'
 import { RiskBadge, StatusBadge } from '../common/StatusBadge'
 
 interface ScanHistoryTableProps {
-  scans: Scan[]
+  scans: ScanListItem[]
 }
 
 export function ScanHistoryTable({ scans }: ScanHistoryTableProps) {

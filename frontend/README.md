@@ -13,6 +13,19 @@ React + TypeScript dashboard for the CyberWatch External Attack Surface Monitori
 
 ## Getting started
 
+1. Ensure the Go API is running on port `8080`.
+2. Configure env:
+
+```powershell
+copy .env.example .env
+```
+
+```env
+VITE_API_URL=http://localhost:8080/api
+```
+
+3. Start the UI:
+
 ```bash
 npm install
 npm run dev
@@ -20,11 +33,13 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-## Demo login
+## Auth
 
-Use any email and password. Authentication is mocked for Phase 1; Keycloak will be wired later.
+Login is still mocked (any email/password). Keycloak comes later.
 
-## Notes
+All other data comes from the Go API:
 
-- API client is configured for `http://localhost:8080/api` but Phase 1 uses mock data only.
-- No backend services are required to run the UI.
+- `GET /api/dashboard`
+- `GET|POST /api/companies`
+- `GET|POST /api/scans`
+- `GET /api/scans/:id`

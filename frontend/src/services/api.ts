@@ -1,11 +1,10 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
+import type { ApiErrorBody, ApiResponse } from '../types'
 
-/**
- * Axios instance prepared for the future Go API backend.
- * Phase 1 uses mock data — do not call real endpoints yet.
- */
+const apiBaseURL = import.meta.env.VITE_API_URL
+
 export const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: apiBaseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,13 +19,29 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('cyberwatch_token')
-      localStorage.removeItem('cyberwatch_user')
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<ApiErrorBody>
+    if (axiosError.response?.data?.error) {
+      return axiosError.response.data.error
     }
-    return Promise.reject(error)
-  },
-)
+    if (axiosError.response?.status === 404) {
+      return 'Resource not found'
+    }
+    if (axiosError.response?.status === 500) {
+      return 'Internal server error'
+    }
+    if (!axiosError.response) {
+      return 'Unable to reach the API. Is the backend running?'
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return fallback
+}
+
+export async function unwrapData<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
+  const response = await promise
+  return response.data.data
+}

@@ -10,12 +10,13 @@ const riskColorMap: Record<RiskLevel, string> = {
 }
 
 const statusColorMap: Record<ScanStatus | CompanyStatus, string> = {
-  Completed: 'green',
-  Running: 'cyan',
-  Pending: 'yellow',
-  Failed: 'red',
+  COMPLETED: 'green',
+  RUNNING: 'cyan',
+  PENDING: 'yellow',
+  FAILED: 'red',
   Active: 'green',
   Inactive: 'gray',
+  Pending: 'yellow',
 }
 
 interface StatusBadgeProps {
@@ -36,7 +37,15 @@ interface RiskBadgeProps {
 
 export function RiskBadge({ level }: RiskBadgeProps) {
   return (
-    <Badge colorScheme={riskColorMap[level]} variant="solid" px={2} py={0.5} borderRadius="md" fontFamily="mono" fontSize="xs">
+    <Badge
+      colorScheme={riskColorMap[level]}
+      variant="solid"
+      px={2}
+      py={0.5}
+      borderRadius="md"
+      fontFamily="mono"
+      fontSize="xs"
+    >
       {level}
     </Badge>
   )

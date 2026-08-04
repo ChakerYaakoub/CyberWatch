@@ -1,4 +1,4 @@
-import { Box, Spinner, Text, VStack } from '@chakra-ui/react'
+import { Alert, AlertIcon, Box, Spinner, Text, VStack } from '@chakra-ui/react'
 
 interface LoadingStateProps {
   label?: string
@@ -35,8 +35,17 @@ export function EmptyState({ title, description }: EmptyStateProps) {
   )
 }
 
-export function formatDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-')
-  if (!year || !month || !day) return isoDate
-  return `${day}/${month}/${year}`
+interface ErrorStateProps {
+  message: string
 }
+
+export function ErrorState({ message }: ErrorStateProps) {
+  return (
+    <Alert status="error" borderRadius="md" bg="red.900" color="red.100">
+      <AlertIcon />
+      {message}
+    </Alert>
+  )
+}
+
+export { formatDisplayDate as formatDate } from '../../utils/scanMappers'

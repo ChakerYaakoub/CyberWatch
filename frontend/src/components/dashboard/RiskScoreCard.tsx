@@ -89,7 +89,7 @@ export function OverviewCards({ stats }: OverviewCardsProps) {
       <VulnerabilityCard count={stats.criticalVulnerabilities} />
       <StatCard
         label="Monitored Companies"
-        value={stats.monitoredCompanies}
+        value={stats.companies}
         hint="Assets under watch"
         accent="brand.500"
       />

@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { login as loginRequest } from '../services/mockService'
+import { login as loginRequest } from '../services/auth.service'
 import type { LoginCredentials } from '../types'
 
 interface AuthUser {
