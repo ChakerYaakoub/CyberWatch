@@ -1,0 +1,95 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Editors / IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# --- Logs & temp ---
+*.log
+logs/
+tmp/
+temp/
+.cache/
+
+# --- Dependencies ---
+node_modules/
+vendor/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# --- Frontend (React / Vite / TypeScript) ---
+frontend/dist/
+frontend/build/
+frontend/.vite/
+*.tsbuildinfo
+.eslintcache
+coverage/
+
+# --- Backend API (Go) ---
+backend-api/bin/
+backend-api/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# --- Worker (Python) ---
+worker/.venv/
+worker/venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# --- Infrastructure / Docker ---
+infrastructure/**/data/
+infrastructure/**/volumes/
+docker-compose.override.yml
+
+# --- Databases / local data ---
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+redis-data/
+
+# --- Test / coverage ---
+coverage.out
+coverage.html
+*.cover
+
+# --- Docs / local notes (keep plan tracked) ---
+*.local.md
