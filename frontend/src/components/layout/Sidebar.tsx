@@ -109,9 +109,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         borderRightWidth="1px"
         borderColor="cyber.border"
         bg="cyber.panel"
-        minH="100vh"
-        position="sticky"
-        top={0}
+        h="100vh"
+        overflowY="auto"
       >
         <SidebarContent />
       </Box>
