@@ -39,8 +39,8 @@ copy infrastructure\.env.example infrastructure\.env
 
 ```env
 VITE_API_URL=http://localhost:8080/api
-VITE_KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
-VITE_KEYCLOAK_REALM=<your-realm>
+VITE_KEYCLOAK_URL=https://YOUR_HOST.cloud-iam.com/auth
+VITE_KEYCLOAK_REALM=YOUR_REALM
 VITE_KEYCLOAK_CLIENT_ID=cyberwatch-frontend
 ```
 

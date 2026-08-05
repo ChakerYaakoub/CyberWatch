@@ -13,8 +13,8 @@ Do **not** store passwords in the Go API or React app.
 | Field | Placeholder |
 |-------|-------------|
 | Deployment name | `<your-deployment-name>` |
-| Admin console | `https://<host>.cloud-iam.com/auth/admin/<realm>/console/` |
-| Base URL (for `.env`) | `https://<host>.cloud-iam.com/auth` |
+| Admin console | `https://YOUR_HOST.cloud-iam.com/auth/admin/YOUR_REALM/console/` |
+| Base URL (for `.env`) | `https://YOUR_HOST.cloud-iam.com/auth` |
 
 The **realm** is usually the deployment name in lowercase. Use the exact name Cloud-IAM gives you.
 
@@ -29,15 +29,14 @@ copy infrastructure\.env.example infrastructure\.env
 ```
 
 ```env
-# API
-KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
-KEYCLOAK_REALM=<your-realm>
+KEYCLOAK_URL=https://YOUR_HOST.cloud-iam.com/auth
+KEYCLOAK_REALM=YOUR_REALM
 KEYCLOAK_CLIENT_ID=cyberwatch-api
 
 # Frontend
 VITE_API_URL=http://localhost:8080/api
-VITE_KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
-VITE_KEYCLOAK_REALM=<your-realm>
+VITE_KEYCLOAK_URL=https://YOUR_HOST.cloud-iam.com/auth
+VITE_KEYCLOAK_REALM=YOUR_REALM
 VITE_KEYCLOAK_CLIENT_ID=cyberwatch-frontend
 ```
 

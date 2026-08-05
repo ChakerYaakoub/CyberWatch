@@ -97,12 +97,12 @@ CORS_ORIGIN=http://localhost:5173
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
-DATABASE_PASSWORD=your_password
+DATABASE_PASSWORD=REPLACE_WITH_DB_PASSWORD
 DATABASE_NAME=cyberwatch
 DATABASE_SSLMODE=disable
 
-KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
-KEYCLOAK_REALM=<your-realm>
+KEYCLOAK_URL=https://YOUR_HOST.cloud-iam.com/auth
+KEYCLOAK_REALM=YOUR_REALM
 KEYCLOAK_CLIENT_ID=cyberwatch-api
 
 SCAN_MODE=http
