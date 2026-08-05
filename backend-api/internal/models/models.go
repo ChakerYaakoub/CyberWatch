@@ -1,9 +1,11 @@
 // Package models defines GORM entities shared with the database schema.
+// Tables: companies, scans, vulnerabilities — same DB the Python worker writes to.
 package models
 
 import "time"
 
 // ScanStatus lifecycle (API creates PENDING→QUEUED; worker sets RUNNING/COMPLETED/FAILED).
+// Stored as VARCHAR — not a Postgres ENUM.
 type ScanStatus string
 
 const (

@@ -32,6 +32,7 @@ func Connect(dsn string, isDev bool) (*gorm.DB, error) {
 
 	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetMaxOpenConns(25)
+	// No SetConnMaxLifetime — fine for Compose; consider for long-lived cloud pools.
 
 	return db, nil
 }

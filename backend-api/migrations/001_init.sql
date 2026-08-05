@@ -1,5 +1,6 @@
 -- CyberWatch schema (reference migration)
--- Applied automatically via GORM AutoMigrate on startup.
+-- NOT executed by the app. Runtime schema comes from GORM AutoMigrate on API startup.
+-- Keep this file aligned with internal/models/models.go for humans / ops.
 
 CREATE TABLE IF NOT EXISTS companies (
     id          BIGSERIAL PRIMARY KEY,
