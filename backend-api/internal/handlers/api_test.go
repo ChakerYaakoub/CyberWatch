@@ -39,9 +39,9 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	vulnRepo := repositories.NewVulnerabilityRepository(db)
 
 	return routes.Setup("http://localhost:5173", routes.Handlers{
-		Companies: handlers.NewCompanyHandler(services.NewCompanyService(companyRepo, nil)),
-		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo, messaging.NoopPublisher{}, nil)),
-		Dashboard: handlers.NewDashboardHandler(services.NewDashboardService(companyRepo, scanRepo, vulnRepo, nil)),
+		Companies: handlers.NewCompanyHandler(services.NewCompanyService(companyRepo)),
+		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo, messaging.NoopPublisher{})),
+		Dashboard: handlers.NewDashboardHandler(services.NewDashboardService(companyRepo, scanRepo, vulnRepo)),
 	}, routes.AuthHooks{
 		Authenticate: middleware.TestAuth(auth.User{
 			Subject: "test-admin",

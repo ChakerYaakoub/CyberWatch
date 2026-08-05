@@ -6,7 +6,6 @@ Go REST API for the CyberWatch External Attack Surface Monitoring Platform.
 
 - Go · Gin · GORM · PostgreSQL
 - Keycloak (JWT via JWKS) for authentication & RBAC
-- Redis (go-redis v9) read-through cache — optional
 
 ## Structure
 
@@ -15,16 +14,14 @@ backend-api/
 ├── cmd/server/          # App entrypoint
 ├── internal/
 │   ├── auth/            # Role constants (ADMIN, ANALYST)
-│   ├── cache/           # Redis / Noop Cache interface
 │   ├── config/          # Loads env vars (.env)
 │   ├── database/        # PostgreSQL connection + AutoMigrate
 │   ├── models/          # GORM entities (Company, Scan, Vulnerability)
 │   ├── repositories/    # Database access
-│   ├── services/        # Business logic + validation (+ cache)
+│   ├── services/        # Business logic + validation
 │   ├── handlers/        # HTTP handlers
 │   ├── routes/          # Route registration + role guards
 │   ├── middleware/      # CORS, logging, JWT auth, RBAC
-│   ├── messaging/       # Scan job publishers (HTTP / RabbitMQ)
 │   └── response/        # Shared JSON helpers
 └── migrations/          # SQL schema reference
 ```
@@ -108,34 +105,13 @@ KEYCLOAK_CLIENT_ID=cyberwatch-api
 
 SCAN_MODE=http
 WORKER_URL=http://localhost:8001
-
-# Optional — if unset or Redis is down, API uses PostgreSQL only
-REDIS_URL=redis://localhost:6379
 ```
 
 For deploy, set `CORS_ORIGIN`, `WORKER_URL` / `RABBITMQ_URL`, and Keycloak/DB to your real hosts — nothing sensitive is hardcoded in the Go binary.
 
 Keycloak vars are **required** — the server will not start without them.  
 `CORS_ORIGIN` and (when `SCAN_MODE=http`) `WORKER_URL` are also required.  
-`REDIS_URL` is optional.  
 Full IdP setup: [`docs/KEYCLOAK.md`](../docs/KEYCLOAK.md).
-
-### Redis caching
-
-Read-through cache in `internal/cache/`. Keys / TTLs:
-
-| Key | TTL |
-|-----|-----|
-| `dashboard:stats` | 60s |
-| `companies:list` / `company:{id}` | 5m |
-| `scan:{id}` | 30s |
-| `scan:status:{id}` | 10s |
-
-Invalidated on company mutations and scan create / terminal status observations. Never fails a request if Redis is offline.
-
-```powershell
-docker run -d --name cyberwatch-redis -p 6379:6379 redis:7-alpine
-```
 
 ### 3. Run
 

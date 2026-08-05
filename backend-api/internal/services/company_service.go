@@ -1,14 +1,12 @@
 package services
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
 	"regexp"
 	"strings"
 
-	"github.com/cyberwatch/backend-api/internal/cache"
 	"github.com/cyberwatch/backend-api/internal/models"
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
@@ -41,14 +39,10 @@ type DashboardStats struct {
 
 type CompanyService struct {
 	companies *repositories.CompanyRepository
-	cache     cache.Cache
 }
 
-func NewCompanyService(companies *repositories.CompanyRepository, c cache.Cache) *CompanyService {
-	if c == nil {
-		c = cache.NewNoop()
-	}
-	return &CompanyService{companies: companies, cache: c}
+func NewCompanyService(companies *repositories.CompanyRepository) *CompanyService {
+	return &CompanyService{companies: companies}
 }
 
 func (s *CompanyService) Create(input CreateCompanyInput) (*models.Company, error) {
@@ -80,42 +74,19 @@ func (s *CompanyService) Create(input CreateCompanyInput) (*models.Company, erro
 	if err := s.companies.Create(company); err != nil {
 		return nil, err
 	}
-	cache.InvalidateCompanyMutation(s.cache, company.ID)
 	return company, nil
 }
 
 func (s *CompanyService) List() ([]models.Company, error) {
-	ctx := context.Background()
-	var cached []models.Company
-	if s.cache.Get(ctx, cache.KeyCompaniesList, &cached) {
-		return cached, nil
-	}
-
-	companies, err := s.companies.FindAll()
-	if err != nil {
-		return nil, err
-	}
-	s.cache.Set(ctx, cache.KeyCompaniesList, companies, cache.TTLCompanies)
-	return companies, nil
+	return s.companies.FindAll()
 }
 
 func (s *CompanyService) GetByID(id uint) (*models.Company, error) {
-	ctx := context.Background()
-	key := cache.CompanyKey(id)
-	var cached models.Company
-	if s.cache.Get(ctx, key, &cached) {
-		return &cached, nil
-	}
-
 	company, err := s.companies.FindByID(id)
 	if errors.Is(err, repositories.ErrNotFound) {
 		return nil, ErrCompanyMissing
 	}
-	if err != nil {
-		return nil, err
-	}
-	s.cache.Set(ctx, key, company, cache.TTLCompanies)
-	return company, nil
+	return company, err
 }
 
 func (s *CompanyService) Update(id uint, input UpdateCompanyInput) (*models.Company, error) {
@@ -154,7 +125,6 @@ func (s *CompanyService) Update(id uint, input UpdateCompanyInput) (*models.Comp
 	if err := s.companies.Update(company); err != nil {
 		return nil, err
 	}
-	cache.InvalidateCompanyMutation(s.cache, id)
 	return company, nil
 }
 
@@ -165,7 +135,6 @@ func (s *CompanyService) Delete(id uint) error {
 		}
 		return err
 	}
-	cache.InvalidateCompanyMutation(s.cache, id)
 	return nil
 }
 

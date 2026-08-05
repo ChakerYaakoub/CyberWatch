@@ -29,7 +29,7 @@ It provides a full-stack application to:
 | Keycloak IAM (hosted Cloud-IAM) | **Done** |
 | Python scanner worker (FastAPI `/scan`) | **Done** |
 | Async scans — HTTP `/jobs` + RabbitMQ | **Done** |
-| Redis / Elasticsearch / Docker / CI | Redis **Done** · ES / Docker / CI Planned |
+| Redis / Elasticsearch / Docker / CI | Planned |
 
 # Business context
 
@@ -56,9 +56,8 @@ flowchart TB
   end
 
   subgraph APILayer["Backend — Done"]
-    API["Go API :8080<br/>Gin · JWT · RBAC · Redis cache"]
+    API["Go API :8080<br/>Gin · JWT · RBAC"]
     DB[("PostgreSQL<br/>companies · scans · vulnerabilities")]
-    Redis[("Redis<br/>dashboard · companies · scans")]
   end
 
   subgraph Scanner["Scanner — Done"]
@@ -75,7 +74,6 @@ flowchart TB
   FE -->|"2. REST /api/* + Bearer JWT"| API
   API -->|"3. verify JWT (JWKS)"| KC
   API -->|"4. CRUD / queries"| DB
-  API -->|"4b. read-through cache"| Redis
   API -->|"5a. SCAN_MODE=http"| Worker
   API -->|"5b. SCAN_MODE=rabbitmq"| MQ
   MQ -->|"6. consume"| Worker
@@ -90,8 +88,7 @@ flowchart TB
 | React | Keycloak | Login via OIDC + PKCE (`cyberwatch-frontend`) |
 | React | Go API | Authenticated REST calls with access token |
 | Go API | Keycloak | Validates JWT signature using realm JWKS |
-| Go API | PostgreSQL | Source of truth for companies, scans, vulnerabilities |
-| Go API | Redis | Read-through cache (optional; falls back to DB) |
+| Go API | PostgreSQL | Stores companies, scans, vulnerabilities |
 | Go API | Worker / RabbitMQ | `SCAN_MODE=http` → `POST /jobs` · `rabbitmq` → `scan_jobs` |
 | Worker | PostgreSQL | Updates scan status + vulnerabilities |
 | Go API | User roles | `ADMIN` / `ANALYST` enforce write permissions |
@@ -151,7 +148,6 @@ Statuses: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 - JWT via Keycloak JWKS
 - RBAC middleware on `/api/*` (`GET /health` is public)
 - `SCAN_MODE=http|rabbitmq` · `internal/messaging` publisher interface
-- Redis read-through cache (`REDIS_URL`) · `internal/cache`
 
 ## Scanner worker (`worker/`)
 
@@ -173,8 +169,8 @@ Setup: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
 | Component | Role |
 |-----------|------|
+| Redis | Cache dashboard / scan status |
 | Elasticsearch | Worker logs / events |
-| Docker Compose | Local multi-service stack |
 
 # Database
 
@@ -223,15 +219,12 @@ CyberWatch/
 ```
 # Getting started
 
-**Need:** Node.js, Go, PostgreSQL, Cloud-IAM Keycloak ([guide](docs/KEYCLOAK.md)), optional Redis
+**Need:** Node.js, Go, PostgreSQL, Cloud-IAM Keycloak ([guide](docs/KEYCLOAK.md))
 
 ```powershell
-# Redis (optional)
-docker run -d --name cyberwatch-redis -p 6379:6379 redis:7-alpine
-
 # API
 cd backend-api
-copy .env.example .env   # DATABASE_* + KEYCLOAK_* + REDIS_URL
+copy .env.example .env   # DATABASE_* + KEYCLOAK_*
 go mod tidy
 go run ./cmd/server      # http://localhost:8080/health
 
@@ -253,8 +246,7 @@ More detail: [`backend-api/README.md`](backend-api/README.md) · [`frontend/READ
 | 3 | Keycloak OIDC + JWT RBAC | **Done** |
 | 4 | Python scanner worker | **Done** |
 | 5 | RabbitMQ + dual scan transport | **Done** |
-| 6 | Redis caching layer | **Done** |
-| 7–9 | Elasticsearch · Docker · CI/CD | Planned |
+| 6–9 | Redis · ES · Docker · CI/CD | Planned |
 
 Full checklist: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
 

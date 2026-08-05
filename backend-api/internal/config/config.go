@@ -39,8 +39,6 @@ type Config struct {
 	RabbitDeadLetterQueue string
 	RabbitRoutingKey     string
 	RabbitMaxAttempts    int
-
-	RedisURL string
 }
 
 func Load() (*Config, error) {
@@ -68,7 +66,6 @@ func Load() (*Config, error) {
 		RabbitDeadLetterQueue: getEnv("RABBITMQ_DEAD_LETTER_QUEUE", "scan_dead_letter"),
 		RabbitRoutingKey:      getEnv("RABBITMQ_ROUTING_KEY", "scan.start"),
 		RabbitMaxAttempts:     getEnvInt("RABBITMQ_MAX_ATTEMPTS", 3),
-		RedisURL:              getEnv("REDIS_URL", ""),
 	}
 
 	missing := missingRequired(cfg)

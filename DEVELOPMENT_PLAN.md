@@ -17,7 +17,7 @@ Build a small but realistic cybersecurity monitoring platform.
 | 3 | Keycloak IAM | **Done** |
 | 4 | Python scanner worker | **Done** |
 | 5 | RabbitMQ async pipeline | **Done** |
-| 6 | Redis | **Done** |
+| 6 | Redis | Planned |
 | 7 | Elasticsearch | Planned |
 | 8 | Docker Compose | Planned |
 | 9 | Demo preparation | Planned |
@@ -33,7 +33,6 @@ flowchart TB
   FE -->|"Bearer JWT"| API[Go API]
   API -->|"JWKS verify"| KC
   API --> DB[(PostgreSQL)]
-  API -->|"read-through"| Redis[(Redis)]
   API -->|"SCAN_MODE=http"| WorkerHTTP[Worker POST /jobs]
   API -->|"SCAN_MODE=rabbitmq"| MQ[RabbitMQ scan_jobs]
   MQ --> WorkerRMQ[Worker consumer]
@@ -46,55 +45,65 @@ flowchart TB
 | User → React → Keycloak → API → PostgreSQL | **Done** |
 | Python `ScanService` + `POST /scan` | **Done** |
 | Dual transport HTTP `/jobs` + RabbitMQ | **Done** |
-| Redis read-through cache | **Done** |
 
 ---
 
-## Phase 1–5 ✅
+## Phase 1–4 ✅
 
-See package READMEs and earlier git history.
+See earlier sections in git history / package READMEs.
 
 - Frontend: [`frontend/README.md`](frontend/README.md)
 - API: [`backend-api/README.md`](backend-api/README.md)
 - Keycloak: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
-- Worker: [`worker/README.md`](worker/README.md)
+- Worker scanners: [`worker/README.md`](worker/README.md)
 
 ---
 
-## Phase 6 — Redis caching ✅
+## Phase 5 — RabbitMQ + dual mode ✅
 
-**Goal:** speed up reads without changing business logic. PostgreSQL remains source of truth.
+**Do not remove HTTP.** Switch with env:
 
-| Env | Example |
-|-----|---------|
-| `REDIS_URL` | `redis://localhost:6379` (optional — API works without Redis) |
+| `SCAN_MODE` | Behavior |
+|-------------|----------|
+| `http` (default) | Go publishes to `WORKER_URL/jobs` (async background) |
+| `rabbitmq` | Go publishes to exchange `cyberwatch.scans` / queue `scan_jobs` |
 
-| Key | TTL | Used for |
-|-----|-----|----------|
-| `dashboard:stats` | 60s | Dashboard aggregates |
-| `companies:list` | 5m | Company list |
-| `company:{id}` | 5m | Company by id |
-| `scan:{id}` | 30s | Scan details / summary |
-| `scan:status:{id}` | 10s | Scan status |
+**Flow:** `POST /api/scans` → create `PENDING` → publish job → `QUEUED` → **202 Accepted**  
+Worker: `RUNNING` → `ScanService` → store vulns + score → `COMPLETED` / `FAILED`
 
-**Strategy:** read-through (Redis → on miss → PostgreSQL → store).
+**Retry:** 3 attempts → `scan_dead_letter`
 
-**Invalidation:** company create/update/delete · scan create · scan failed (publish) · dashboard when a completed/failed scan is observed from DB.
+**Frontend:** Scan details polls every 3s while `PENDING` / `QUEUED` / `RUNNING`
 
-**Resilience:** if Redis is unset or down, requests continue via PostgreSQL. Logs: hit / miss / invalidate / reconnect.
-
-**Code:** `backend-api/internal/cache/` (`interfaces.go`, `cache.go`, `redis.go`) · services depend on `cache.Cache`.
+### Dev run (HTTP)
 
 ```powershell
-docker run -d --name cyberwatch-redis -p 6379:6379 redis:7-alpine
-# backend-api/.env → REDIS_URL=redis://localhost:6379
+# Worker
+cd worker
+uvicorn app.main:app --reload --port 8001
+
+# API (.env): SCAN_MODE=http, WORKER_URL=http://localhost:8001
+cd backend-api
+go run ./cmd/server
+```
+
+### Async run (RabbitMQ)
+
+```powershell
+docker run -d --name cyberwatch-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+# Worker consumer
+cd worker
+python -m app.consumer
+
+# API (.env): SCAN_MODE=rabbitmq, RABBITMQ_URL=amqp://guest:guest@localhost:5672/
 ```
 
 ---
 
-## Phase 7–9
+## Phase 6–9
 
-Elasticsearch · Docker Compose · Demo prep — planned.
+Redis · Elasticsearch · Docker Compose · Demo prep — planned.
 
 ---
 
@@ -103,4 +112,3 @@ Elasticsearch · Docker Compose · Demo prep — planned.
 - No secrets in code · env vars only
 - JWT + roles on API · Keycloak owns passwords
 - Worker: passive checks only · durable queue messages · DLQ on final failure
-- Cache never overrides auth or validation

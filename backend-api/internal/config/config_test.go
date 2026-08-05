@@ -61,7 +61,6 @@ func clearEnv(t *testing.T) {
 		"SCAN_MODE",
 		"WORKER_URL",
 		"RABBITMQ_URL",
-		"REDIS_URL",
 	}
 	for _, key := range keys {
 		require.NoError(t, os.Unsetenv(key))
