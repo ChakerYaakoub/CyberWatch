@@ -30,6 +30,7 @@ func Setup(corsOrigin string, h Handlers, authHooks AuthHooks) *gin.Engine {
 	router.GET("/health", handlers.Health)
 
 	api := router.Group("/api")
+	// Every /api call needs a valid Keycloak JWT; mutating routes add RequireRoles below.
 	api.Use(authHooks.Authenticate)
 	{
 		api.GET("/dashboard", h.Dashboard.Get)

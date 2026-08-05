@@ -15,6 +15,7 @@ export function getUserManager(): UserManager {
   return userManager
 }
 
+/** Access token for Axios Bearer header — null if missing or expired. */
 export async function getAccessToken(): Promise<string | null> {
   const user = await getUserManager().getUser()
   if (!user || user.expired) {
