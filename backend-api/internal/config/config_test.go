@@ -8,7 +8,7 @@ import (
 )
 
 func TestLoadRequiresDatabaseEnv(t *testing.T) {
-	clearDBEnv(t)
+	clearEnv(t)
 
 	_, err := Load()
 	require.Error(t, err)
@@ -16,13 +16,16 @@ func TestLoadRequiresDatabaseEnv(t *testing.T) {
 }
 
 func TestLoadFromEnv(t *testing.T) {
-	clearDBEnv(t)
+	clearEnv(t)
 
 	t.Setenv("DATABASE_HOST", "db.internal")
 	t.Setenv("DATABASE_PORT", "5432")
 	t.Setenv("DATABASE_USER", "cyber")
 	t.Setenv("DATABASE_PASSWORD", "secret")
 	t.Setenv("DATABASE_NAME", "cyberwatch")
+	t.Setenv("KEYCLOAK_URL", "http://localhost:8081")
+	t.Setenv("KEYCLOAK_REALM", "CyberWatch")
+	t.Setenv("KEYCLOAK_CLIENT_ID", "cyberwatch-api")
 	t.Setenv("APP_PORT", "9090")
 	t.Setenv("CORS_ORIGIN", "http://localhost:5173")
 
@@ -31,12 +34,13 @@ func TestLoadFromEnv(t *testing.T) {
 	require.Equal(t, "db.internal", cfg.DBHost)
 	require.Equal(t, "secret", cfg.DBPassword)
 	require.Equal(t, "9090", cfg.AppPort)
+	require.Equal(t, "CyberWatch", cfg.KeycloakRealm)
 	require.Contains(t, cfg.DSN(), "host=db.internal")
 	require.Contains(t, cfg.DSN(), "password=secret")
 	require.NotContains(t, cfg.DSN(), "password=password")
 }
 
-func clearDBEnv(t *testing.T) {
+func clearEnv(t *testing.T) {
 	t.Helper()
 	keys := []string{
 		"DATABASE_HOST",
@@ -45,6 +49,9 @@ func clearDBEnv(t *testing.T) {
 		"DATABASE_PASSWORD",
 		"DATABASE_NAME",
 		"DATABASE_SSLMODE",
+		"KEYCLOAK_URL",
+		"KEYCLOAK_REALM",
+		"KEYCLOAK_CLIENT_ID",
 		"APP_PORT",
 		"APP_ENV",
 		"CORS_ORIGIN",

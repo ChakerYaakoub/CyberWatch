@@ -1,36 +1,17 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { ProtectedRoute } from '../auth/ProtectedRoute'
 import { AppLayout } from '../components/layout/AppLayout'
-import { useAuth } from '../hooks/useAuth'
+import { AuthCallback } from '../pages/AuthCallback'
 import { Companies } from '../pages/Companies'
 import { Dashboard } from '../pages/Dashboard'
-import { Login } from '../pages/Login'
 import { ScanDetails } from '../pages/ScanDetails'
-
-function ProtectedRoute() {
-  const { isAuthenticated } = useAuth()
-  const location = useLocation()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
-
-  return <Outlet />
-}
-
-function PublicOnlyRoute() {
-  const { isAuthenticated } = useAuth()
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />
-  }
-  return <Outlet />
-}
+import { SilentRenew } from '../pages/SilentRenew'
 
 export function AppRouter() {
   return (
     <Routes>
-      <Route element={<PublicOnlyRoute />}>
-        <Route path="/login" element={<Login />} />
-      </Route>
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/silent-renew" element={<SilentRenew />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

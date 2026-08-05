@@ -7,6 +7,7 @@ import (
 	"github.com/cyberwatch/backend-api/internal/config"
 	"github.com/cyberwatch/backend-api/internal/database"
 	"github.com/cyberwatch/backend-api/internal/handlers"
+	"github.com/cyberwatch/backend-api/internal/middleware"
 	"github.com/cyberwatch/backend-api/internal/repositories"
 	"github.com/cyberwatch/backend-api/internal/routes"
 	"github.com/cyberwatch/backend-api/internal/services"
@@ -32,6 +33,15 @@ func main() {
 		log.Fatalf("database migration failed: %v", err)
 	}
 
+	jwtAuth, err := middleware.NewJWTAuth(middleware.JWTConfig{
+		KeycloakURL: cfg.KeycloakURL,
+		Realm:       cfg.KeycloakRealm,
+		Audience:    cfg.KeycloakClientID,
+	})
+	if err != nil {
+		log.Fatalf("keycloak jwt setup failed: %v", err)
+	}
+
 	companyRepo := repositories.NewCompanyRepository(db)
 	scanRepo := repositories.NewScanRepository(db)
 	vulnRepo := repositories.NewVulnerabilityRepository(db)
@@ -44,16 +54,20 @@ func main() {
 		Companies: handlers.NewCompanyHandler(companyService),
 		Scans:     handlers.NewScanHandler(scanService),
 		Dashboard: handlers.NewDashboardHandler(dashboardService),
+	}, routes.AuthHooks{
+		Authenticate: jwtAuth,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.AppPort)
-	log.Printf("CyberWatch API listening on port %s (env=%s, db=%s@%s:%s/%s)",
+	log.Printf("CyberWatch API listening on port %s (env=%s, db=%s@%s:%s/%s, keycloak=%s/realms/%s)",
 		cfg.AppPort,
 		cfg.AppEnv,
 		cfg.DBUser,
 		cfg.DBHost,
 		cfg.DBPort,
 		cfg.DBName,
+		cfg.KeycloakURL,
+		cfg.KeycloakRealm,
 	)
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("server stopped: %v", err)

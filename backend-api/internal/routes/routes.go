@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/cyberwatch/backend-api/internal/auth"
 	"github.com/cyberwatch/backend-api/internal/handlers"
 	"github.com/cyberwatch/backend-api/internal/middleware"
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,11 @@ type Handlers struct {
 	Dashboard *handlers.DashboardHandler
 }
 
-func Setup(corsOrigin string, h Handlers) *gin.Engine {
+type AuthHooks struct {
+	Authenticate gin.HandlerFunc
+}
+
+func Setup(corsOrigin string, h Handlers, authHooks AuthHooks) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestLogger())
@@ -21,18 +26,19 @@ func Setup(corsOrigin string, h Handlers) *gin.Engine {
 	router.GET("/health", handlers.Health)
 
 	api := router.Group("/api")
+	api.Use(authHooks.Authenticate)
 	{
 		api.GET("/dashboard", h.Dashboard.Get)
 
 		api.GET("/companies", h.Companies.List)
-		api.POST("/companies", h.Companies.Create)
 		api.GET("/companies/:id", h.Companies.GetByID)
-		api.PUT("/companies/:id", h.Companies.Update)
-		api.DELETE("/companies/:id", h.Companies.Delete)
+		api.POST("/companies", middleware.RequireRoles(auth.RoleAdmin), h.Companies.Create)
+		api.PUT("/companies/:id", middleware.RequireRoles(auth.RoleAdmin), h.Companies.Update)
+		api.DELETE("/companies/:id", middleware.RequireRoles(auth.RoleAdmin), h.Companies.Delete)
 
 		api.GET("/scans", h.Scans.List)
-		api.POST("/scans", h.Scans.Create)
 		api.GET("/scans/:id", h.Scans.GetByID)
+		api.POST("/scans", middleware.RequireRoles(auth.RoleAdmin, auth.RoleAnalyst), h.Scans.Create)
 	}
 
 	return router

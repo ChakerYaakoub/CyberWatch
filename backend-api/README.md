@@ -5,22 +5,24 @@ Go REST API for the CyberWatch External Attack Surface Monitoring Platform.
 ## Stack
 
 - Go · Gin · GORM · PostgreSQL
+- Keycloak (JWT via JWKS) for authentication & RBAC
 
 ## Structure
 
 ```
 backend-api/
-├── cmd/server/          # App entrypoint (starts the HTTP server)
+├── cmd/server/          # App entrypoint
 ├── internal/
+│   ├── auth/            # Role constants (ADMIN, ANALYST)
 │   ├── config/          # Loads env vars (.env)
 │   ├── database/        # PostgreSQL connection + AutoMigrate
 │   ├── models/          # GORM entities (Company, Scan, Vulnerability)
-│   ├── repositories/    # Database queries / data access
+│   ├── repositories/    # Database access
 │   ├── services/        # Business logic + validation
-│   ├── handlers/        # HTTP request/response handlers
-│   ├── routes/          # API route registration
-│   ├── middleware/      # CORS, request logging
-│   └── response/        # Shared JSON success/error helpers
+│   ├── handlers/        # HTTP handlers
+│   ├── routes/          # Route registration + role guards
+│   ├── middleware/      # CORS, logging, JWT auth, RBAC
+│   └── response/        # Shared JSON helpers
 └── migrations/          # SQL schema reference
 ```
 
@@ -29,9 +31,6 @@ backend-api/
 ```text
 Company (1) ──────< (N) Scan (1) ──────< (N) Vulnerability
 ```
-
-- One **Company** has many **Scans**
-- One **Scan** has many **Vulnerabilities**
 
 ```mermaid
 erDiagram
@@ -74,9 +73,7 @@ erDiagram
 
 ### 1. PostgreSQL
 
-Install PostgreSQL 17 and make sure the service `postgresql-x64-17` is running.
-
-Create the database (SQL Shell / psql):
+Create the database:
 
 ```sql
 CREATE DATABASE cyberwatch;
@@ -88,15 +85,27 @@ CREATE DATABASE cyberwatch;
 copy .env.example .env
 ```
 
-Edit `.env` with your credentials:
+Edit `.env`:
 
 ```env
+APP_PORT=8080
+APP_ENV=development
+CORS_ORIGIN=http://localhost:5173
+
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=your_password
 DATABASE_NAME=cyberwatch
+DATABASE_SSLMODE=disable
+
+KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
+KEYCLOAK_REALM=<your-realm>
+KEYCLOAK_CLIENT_ID=cyberwatch-api
 ```
+
+Keycloak vars are **required** — the server will not start without them.  
+Full IdP setup: [`docs/KEYCLOAK.md`](../docs/KEYCLOAK.md).
 
 ### 3. Run
 
@@ -106,21 +115,40 @@ go mod tidy
 go run ./cmd/server
 ```
 
-- Health: http://localhost:8080/health
-- Dashboard: http://localhost:8080/api/dashboard
+- Health (public): http://localhost:8080/health  
+- API (JWT required): http://localhost:8080/api/...
+
+## Authentication
+
+All `/api/*` routes require a valid Keycloak access token:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+| Action | Roles |
+|--------|-------|
+| View dashboard / companies / scans | `ADMIN` or `ANALYST` |
+| Create / update / delete company | `ADMIN` |
+| Create scan | `ADMIN` or `ANALYST` |
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing / invalid token |
+| `403` | Valid token, insufficient role |
+
+Public: `GET /health`
 
 ## Endpoints
 
-| Method     | Path                 | Description                    |
-| ---------- | -------------------- | ------------------------------ |
-| GET        | `/health`            | Health check                   |
-| GET        | `/api/dashboard`     | Dashboard stats                |
-| GET / POST | `/api/companies`     | List / create companies        |
-| GET        | `/api/companies/:id` | Company details                |
-| PUT        | `/api/companies/:id` | Update company                 |
-| DELETE     | `/api/companies/:id` | Delete company                 |
-| GET / POST | `/api/scans`         | List / create scan (`PENDING`) |
-| GET        | `/api/scans/:id`     | Scan + vulnerabilities         |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | Public | Health check |
+| GET | `/api/dashboard` | ADMIN, ANALYST | Dashboard stats |
+| GET / POST | `/api/companies` | GET: any · POST: ADMIN | List / create |
+| GET / PUT / DELETE | `/api/companies/:id` | GET: any · write: ADMIN | Company CRUD |
+| GET / POST | `/api/scans` | GET: any · POST: ADMIN, ANALYST | List / create (`PENDING`) |
+| GET | `/api/scans/:id` | ADMIN, ANALYST | Scan + vulnerabilities |
 
 ```json
 POST /api/companies
@@ -146,4 +174,4 @@ POST /api/scans
 go test ./...
 ```
 
-Uses in-memory SQLite (no PostgreSQL required).
+Uses in-memory SQLite (no PostgreSQL or Keycloak required).

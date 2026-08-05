@@ -9,15 +9,17 @@ import {
   MenuList,
   MenuItem,
   Avatar,
+  Badge,
 } from '@chakra-ui/react'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../auth/useAuth'
 
 interface NavbarProps {
   onOpenSidebar: () => void
 }
 
 export function Navbar({ onOpenSidebar }: NavbarProps) {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
+  const primaryRole = isAdmin ? 'ADMIN' : user?.roles[0] ?? 'USER'
 
   return (
     <Flex
@@ -29,8 +31,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
       borderBottomWidth="1px"
       borderColor="cyber.border"
       bg="cyber.panel"
-      position="sticky"
-      top={0}
+      flexShrink={0}
       zIndex={10}
     >
       <HStack spacing={3}>
@@ -60,17 +61,28 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           <HStack spacing={3} cursor="pointer">
             <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
               <Text fontSize="sm" fontWeight="600">
-                {user?.email ?? 'Analyst'}
+                {user?.name ?? user?.email ?? 'User'}
               </Text>
-              <Text fontSize="xs" color="cyber.muted">
-                Security Analyst
-              </Text>
+              <HStack justify="flex-end" spacing={2}>
+                <Badge colorScheme={isAdmin ? 'purple' : 'cyan'} fontSize="0.65rem">
+                  {primaryRole}
+                </Badge>
+                <Text fontSize="xs" color="cyber.muted">
+                  {user?.email}
+                </Text>
+              </HStack>
             </Box>
-            <Avatar size="sm" name={user?.email ?? 'CW'} bg="brand.500" color="gray.900" />
+            <Avatar size="sm" name={user?.name ?? user?.email ?? 'CW'} bg="brand.500" color="gray.900" />
           </HStack>
         </MenuButton>
         <MenuList bg="cyber.panel" borderColor="cyber.border">
-          <MenuItem bg="cyber.panel" _hover={{ bg: 'cyber.panelAlt' }} onClick={logout}>
+          <MenuItem
+            bg="cyber.panel"
+            _hover={{ bg: 'cyber.panelAlt' }}
+            onClick={() => {
+              void logout()
+            }}
+          >
             Sign out
           </MenuItem>
         </MenuList>

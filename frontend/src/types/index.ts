@@ -11,7 +11,6 @@ export type {
   FindingView,
 } from './scan'
 export type { DashboardStats, RiskEvolutionPoint, VulnerabilityDistribution } from './dashboard'
-export type { LoginCredentials, AuthSession } from './auth'
 
-/** @deprecated kept for StatusBadge company display */
+/** Display-only company status badge values */
 export type CompanyStatus = 'Active' | 'Inactive' | 'Pending'

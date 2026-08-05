@@ -1,5 +1,6 @@
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { ApiErrorBody, ApiResponse } from '../types'
+import { getAccessToken, loginRedirect } from '../auth/TokenManager'
 
 const apiBaseURL = import.meta.env.VITE_API_URL
 
@@ -11,17 +12,33 @@ export const api = axios.create({
   timeout: 15000,
 })
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('cyberwatch_token')
+api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const token = await getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError<ApiErrorBody>) => {
+    if (error.response?.status === 401) {
+      await loginRedirect()
+    }
+    return Promise.reject(error)
+  },
+)
+
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiErrorBody>
+    if (axiosError.response?.status === 401) {
+      return 'Your session expired. Please sign in again.'
+    }
+    if (axiosError.response?.status === 403) {
+      return 'You do not have permission to perform this action.'
+    }
     if (axiosError.response?.data?.error) {
       return axiosError.response.data.error
     }

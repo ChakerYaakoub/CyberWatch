@@ -18,24 +18,28 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+
+	KeycloakURL      string
+	KeycloakRealm    string
+	KeycloakClientID string
 }
 
-// Load reads configuration from environment variables.
-// Optional non-secret defaults exist only for APP_PORT / APP_ENV / CORS_ORIGIN / DATABASE_SSLMODE.
-// Database credentials and connection target must come from the environment (.env).
 func Load() (*Config, error) {
 	loadDotEnv()
 
 	cfg := &Config{
-		AppPort:    getEnv("APP_PORT", "8080"),
-		AppEnv:     getEnv("APP_ENV", "development"),
-		CORSOrigin: getEnv("CORS_ORIGIN", "http://localhost:5173"),
-		DBHost:     mustGetEnv("DATABASE_HOST"),
-		DBPort:     mustGetEnv("DATABASE_PORT"),
-		DBUser:     mustGetEnv("DATABASE_USER"),
-		DBPassword: mustGetEnv("DATABASE_PASSWORD"),
-		DBName:     mustGetEnv("DATABASE_NAME"),
-		DBSSLMode:  getEnv("DATABASE_SSLMODE", "disable"),
+		AppPort:          getEnv("APP_PORT", "8080"),
+		AppEnv:           getEnv("APP_ENV", "development"),
+		CORSOrigin:       getEnv("CORS_ORIGIN", "http://localhost:5173"),
+		DBHost:           mustGetEnv("DATABASE_HOST"),
+		DBPort:           mustGetEnv("DATABASE_PORT"),
+		DBUser:           mustGetEnv("DATABASE_USER"),
+		DBPassword:       mustGetEnv("DATABASE_PASSWORD"),
+		DBName:           mustGetEnv("DATABASE_NAME"),
+		DBSSLMode:        getEnv("DATABASE_SSLMODE", "disable"),
+		KeycloakURL:      mustGetEnv("KEYCLOAK_URL"),
+		KeycloakRealm:    mustGetEnv("KEYCLOAK_REALM"),
+		KeycloakClientID: mustGetEnv("KEYCLOAK_CLIENT_ID"),
 	}
 
 	missing := missingRequired(cfg)
@@ -62,7 +66,6 @@ func (c *Config) DSN() string {
 }
 
 func loadDotEnv() {
-	// Try common locations so `go run` works from repo root or backend-api/.
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("backend-api/.env")
 }
@@ -83,11 +86,14 @@ func mustGetEnv(key string) string {
 
 func missingRequired(cfg *Config) []string {
 	required := map[string]string{
-		"DATABASE_HOST":     cfg.DBHost,
-		"DATABASE_PORT":     cfg.DBPort,
-		"DATABASE_USER":     cfg.DBUser,
-		"DATABASE_PASSWORD": cfg.DBPassword,
-		"DATABASE_NAME":     cfg.DBName,
+		"DATABASE_HOST":      cfg.DBHost,
+		"DATABASE_PORT":      cfg.DBPort,
+		"DATABASE_USER":      cfg.DBUser,
+		"DATABASE_PASSWORD":  cfg.DBPassword,
+		"DATABASE_NAME":      cfg.DBName,
+		"KEYCLOAK_URL":       cfg.KeycloakURL,
+		"KEYCLOAK_REALM":     cfg.KeycloakRealm,
+		"KEYCLOAK_CLIENT_ID": cfg.KeycloakClientID,
 	}
 
 	var missing []string

@@ -8,7 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cyberwatch/backend-api/internal/auth"
 	"github.com/cyberwatch/backend-api/internal/handlers"
+	"github.com/cyberwatch/backend-api/internal/middleware"
 	"github.com/cyberwatch/backend-api/internal/models"
 	"github.com/cyberwatch/backend-api/internal/repositories"
 	"github.com/cyberwatch/backend-api/internal/routes"
@@ -39,6 +41,13 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 		Companies: handlers.NewCompanyHandler(services.NewCompanyService(companyRepo)),
 		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo)),
 		Dashboard: handlers.NewDashboardHandler(services.NewDashboardService(companyRepo, scanRepo, vulnRepo)),
+	}, routes.AuthHooks{
+		Authenticate: middleware.TestAuth(auth.User{
+			Subject: "test-admin",
+			Email:   "admin@cyberwatch.local",
+			Name:    "Test Admin",
+			Roles:   []string{auth.RoleAdmin, auth.RoleAnalyst},
+		}),
 	})
 }
 

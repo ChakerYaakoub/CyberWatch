@@ -2,7 +2,7 @@ import { ChakraProvider, ColorModeScript } from '@chakra-ui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { AuthProvider } from '../hooks/useAuth'
+import { AuthProvider } from '../auth/AuthProvider'
 import { theme } from './theme'
 
 const queryClient = new QueryClient({

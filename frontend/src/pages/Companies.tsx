@@ -37,6 +37,7 @@ import {
   useDeleteCompany,
   useUpdateCompany,
 } from '../hooks/useCompanies'
+import { useAuth } from '../auth/useAuth'
 import { useCreateScan } from '../hooks/useScans'
 import { getErrorMessage } from '../services/api'
 import type { Company } from '../types'
@@ -44,6 +45,7 @@ import type { Company } from '../types'
 type FormMode = 'create' | 'edit'
 
 export function Companies() {
+  const { isAdmin, isAnalyst } = useAuth()
   const { data: companies, isLoading, error } = useCompanies()
   const createCompany = useCreateCompany()
   const updateCompany = useUpdateCompany()
@@ -207,7 +209,7 @@ export function Companies() {
             Manage organizations monitored by CyberWatch
           </Text>
         </Stack>
-        <Button onClick={openCreateModal}>Add Company</Button>
+        {isAdmin ? <Button onClick={openCreateModal}>Add Company</Button> : null}
       </Flex>
 
       <Card>
@@ -244,26 +246,32 @@ export function Companies() {
                       </Td>
                       <Td textAlign="right">
                         <HStack justify="flex-end" spacing={2}>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={() => void handleStartScan(company.id, company.name)}
-                            isLoading={startingCompanyId === company.id}
-                          >
-                            Start Scan
-                          </Button>
-                          <Button size="xs" variant="ghost" onClick={() => openEditModal(company)}>
-                            Edit
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            color="red.300"
-                            _hover={{ bg: 'red.900', color: 'red.200' }}
-                            onClick={() => openDeleteModal(company)}
-                          >
-                            Delete
-                          </Button>
+                          {isAnalyst ? (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => void handleStartScan(company.id, company.name)}
+                              isLoading={startingCompanyId === company.id}
+                            >
+                              Start Scan
+                            </Button>
+                          ) : null}
+                          {isAdmin ? (
+                            <>
+                              <Button size="xs" variant="ghost" onClick={() => openEditModal(company)}>
+                                Edit
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                color="red.300"
+                                _hover={{ bg: 'red.900', color: 'red.200' }}
+                                onClick={() => openDeleteModal(company)}
+                              >
+                                Delete
+                              </Button>
+                            </>
+                          ) : null}
                         </HStack>
                       </Td>
                     </Tr>
