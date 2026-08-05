@@ -1,660 +1,247 @@
-# 🛡️ CyberWatch
+# CyberWatch
+
 ## External Attack Surface Monitoring Platform
 
 ![CyberWatch](https://img.shields.io/badge/Project-CyberWatch-blue)
 ![React](https://img.shields.io/badge/Frontend-React%20TypeScript-61DAFB)
 ![Go](https://img.shields.io/badge/API-Go-00ADD8)
-![Python](https://img.shields.io/badge/Scanner-Python-3776AB)
 ![Keycloak](https://img.shields.io/badge/Auth-Keycloak-red)
-![RabbitMQ](https://img.shields.io/badge/Message-Broker-orange)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)
 
+# Project overview
+
+CyberWatch is a simplified **External Attack Surface Monitoring** platform inspired by products such as [AlgoSecure AlgoLightHouse](https://www.algosecure.fr/conseil/algolighthouse/).
+
+It provides a full-stack application to:
+
+- manage monitored companies
+- launch external security scans
+- detect publicly exposed weaknesses
+- calculate a risk score
+- display results on a security dashboard
+
+# Current status
+
+| Area | Status |
+|------|--------|
+| React frontend (dashboard, companies, scans) | **Done** |
+| Go REST API + PostgreSQL | **Done** |
+| Keycloak IAM (hosted Cloud-IAM) | **Done** |
+| Python scanner worker | Planned |
+| RabbitMQ async jobs | Planned |
+| Redis / Elasticsearch / Docker / CI | Planned |
+
+# Business context
+
+Companies expose domains, websites, APIs, and public services on the Internet.
+
+CyberWatch helps analysts answer:
+
+> What is publicly exposed, and what is a potential security risk?
+
+# Architecture
 
-# 📌 Project Overview
+Solid lines = **working today**. Dashed lines = **planned**.
+
+```mermaid
+flowchart TB
+  User["User<br/>ADMIN or ANALYST"]
+
+  subgraph Client["Frontend — Done"]
+    FE["React app<br/>Chakra · Vite · oidc-client-ts"]
+  end
 
-CyberWatch is a simplified **External Attack Surface Monitoring Platform** inspired by cybersecurity platforms such as AlgoSecure AlgoLightHouse.
+  subgraph IdP["Identity — Done"]
+    KC["Keycloak Cloud-IAM<br/>clients: cyberwatch-frontend · cyberwatch-api<br/>roles: ADMIN · ANALYST"]
+  end
+
+  subgraph APILayer["Backend — Done"]
+    API["Go API :8080<br/>Gin · JWT · RBAC"]
+    DB[("PostgreSQL<br/>companies · scans · vulnerabilities")]
+  end
+
+  subgraph Future["Scan pipeline — Planned"]
+    MQ[["RabbitMQ<br/>scan_jobs"]]
+    Worker["Python worker"]
+  end
+
+  User -->|"opens UI"| FE
+  FE -->|"1. OIDC login / logout"| KC
+  KC -->|"tokens"| FE
+  FE -->|"2. REST /api/* + Bearer JWT"| API
+  API -->|"3. verify JWT (JWKS)"| KC
+  API -->|"4. CRUD / queries"| DB
+  API -.->|"5. publish scan job"| MQ
+  MQ -.->|"6. consume"| Worker
+  Worker -.->|"7. write findings"| DB
+```
+
+### How pieces relate (today)
+
+| From | To | Relation |
+|------|-----|----------|
+| User | React | Uses dashboard / companies / scans |
+| React | Keycloak | Login via OIDC + PKCE (`cyberwatch-frontend`) |
+| React | Go API | Authenticated REST calls with access token |
+| Go API | Keycloak | Validates JWT signature using realm JWKS |
+| Go API | PostgreSQL | Stores companies, scans, vulnerabilities |
+| Go API | User roles | `ADMIN` / `ANALYST` enforce write permissions |
+
+### Auth flow
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant FE as React
+  participant KC as Keycloak
+  participant API as Go API
+  participant DB as PostgreSQL
+
+  User->>FE: Open app
+  FE->>KC: Redirect login (OIDC + PKCE)
+  User->>KC: Authenticate
+  KC->>FE: Redirect /auth/callback + tokens
+  FE->>API: GET/POST /api/... Authorization Bearer
+  API->>API: Validate JWT (JWKS) + check role
+  API->>DB: Query / write
+  DB->>API: Data
+  API->>FE: JSON { data } or error
+```
+
+### Planned scan flow
 
-The objective is to build a complete full-stack distributed application capable of:
+Today a scan is created as `PENDING`. Execution starts when the worker pipeline is built.
 
-- managing monitored companies
-- launching external security scans
-- analyzing publicly available information
-- detecting security weaknesses
-- calculating a risk score
-- displaying results through a security dashboard
+```mermaid
+flowchart LR
+  FE[React: Start scan] --> API[Go API: create Scan PENDING]
+  API -.-> MQ[RabbitMQ]
+  MQ -.-> W[Python worker]
+  W -.-> DB[(PostgreSQL: findings + score)]
+  DB --> FE2[React: dashboard / scan details]
+```
 
+# Technology stack
 
-The project demonstrates:
+## Frontend (`frontend/`)
 
-- React frontend development
-- Go backend API
-- Python security workers
-- asynchronous processing
-- IAM authentication
-- distributed architecture
+- React · TypeScript · Vite · Chakra UI
+- React Router · TanStack Query · Axios · Recharts
+- oidc-client-ts (no local login page)
+- UI: AlgoSecure-inspired green / navy · light & dark mode
 
+**Pages:** Dashboard · Companies · Scan details · `/auth/callback` · `/silent-renew`
 
----
+## Backend (`backend-api/`)
 
-# 🎯 Business Context
+- Go · Gin · GORM · PostgreSQL
+- JWT via Keycloak JWKS
+- RBAC middleware on `/api/*` (`GET /health` is public)
 
-Modern companies expose many assets on the Internet:
+## Authentication (Keycloak)
 
-- domains
-- websites
-- APIs
-- servers
-- technologies
-- public services
+| Role | Can do |
+|------|--------|
+| `ADMIN` | Create / update / delete companies · view all · create scans |
+| `ANALYST` | View dashboard / companies / scans · create scans |
 
+Setup: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
-CyberWatch helps security analysts answer:
+## Planned
 
-> "What information is publicly exposed and what represents a potential security risk?"
-
-
----
-
-# 🚀 MVP Scope
-
-CyberWatch implements a realistic but lightweight security scanner.
-
-The scanner performs passive external analysis:
-
-
-## DNS Analysis
-
-Collect:
-
-- IP address
-- DNS resolution status
-
-
-Example:
-
-
-Domain:
-example.com
-
-IP:
-93.xxx.xxx.xxx
-
-DNS:
-Available
-
-
-
----
-
-## HTTP Security Analysis
-
-The scanner checks:
-
-- HTTPS availability
-- HTTP response
-- Security headers
-
-
-Detected headers:
-
-- Strict-Transport-Security
-- Content-Security-Policy
-- X-Frame-Options
-- X-Content-Type-Options
-
-
-Example:
-
-
-
-Missing Security Header:
-
-Content-Security-Policy
-
-Severity:
-
-MEDIUM
-
-
-
----
-
-## Technology Detection
-
-The scanner analyzes:
-
-- HTTP headers
-- HTML content
-- server information
-
-
-Example:
-
-
-
-Detected Technologies:
-
-Nginx
-React
-
-
-
----
-
-## Exposure Detection
-
-The scanner checks common services:
-
-
-Ports:
-
-
-80
-443
-22
-21
-3306
-5432
-
-
-
-Example:
-
-
-Open Service:
-
-443 HTTPS
-
-Risk:
-
-LOW
-
-
-
----
-
-## Risk Calculation
-
-The system generates a security score.
-
-
-Example:
-
-
-
-Security Score:
-
-72 / 100
-
-Risk Level:
-
-MEDIUM
-
-
-
-The score is calculated from detected findings.
-
-
----
-
-# 🏗️ Architecture
-
-
-                User
-
-                 |
-
-                 |
-
-        React + Chakra UI
-
-                 |
-
-                 |
-
-          Keycloak IAM
-
-                 |
-
-                 |
-
-          Go API Backend
-
-                 |
-
-    ----------------------------
-
-    |                          |
-
-PostgreSQL RabbitMQ
-
-                              |
-
-                              |
-
-                     Python Scanner Worker
-
-                              |
-
-            --------------------------------
-
-            |              |               |
-
-          DNS            HTTP          Security
-
-         Scanner        Scanner        Checks
-
-
-                              |
-
-                              |
-
-                     Elasticsearch Logs
-
-
----
-
-# 🧰 Technology Stack
-
-
-# Frontend
-
-React + TypeScript
-
-Chakra UI
-
-React Router
-
-TanStack Query
-
-Axios
-
-Recharts
-
-oidc-client-ts
-
-
-Responsibilities:
-
-- authentication UI
-- dashboard
-- company management
-- scan results visualization
-
-
----
-
-# Backend API
-
-## Go Service
-
-
-Technologies:
-
-- Go
-- Gin
-- GORM
-- PostgreSQL
-
-
-Responsibilities:
-
-- REST API
-- business logic
-- JWT validation
-- communication with workers
-- database management
-
-
----
-
-# Authentication
-
-## Keycloak
-
-
-Used as Identity Provider.
-
-
-Features:
-
-- OAuth2
-- OpenID Connect
-- JWT
-- Role Based Access Control
-
-
-Roles:
-
-
-## ADMIN
-
-Permissions:
-
-- manage users
-- manage companies
-- access all reports
-
-
-## ANALYST
-
-Permissions:
-
-- create scans
-- view results
-- analyze vulnerabilities
-
-
----
-
-# Python Security Worker
-
-
-Technologies:
-
-- Python
-- RabbitMQ
-- Pika
-- Requests
-- BeautifulSoup
-- dnspython
-
-
-Responsibilities:
-
-- consume scan jobs
-- execute security checks
-- calculate risk
-- save results
-
-
----
-
-# Message Broker
-
-## RabbitMQ
-
-
-Used for asynchronous scan execution.
-
-
-Flow:
-
-
-
-User starts scan
-
-   |
-
-   |
-
-Go API creates job
-
-   |
-
-   |
-
-RabbitMQ Queue
-
-   |
-
-   |
-
-Python Worker
-
-   |
-
-   |
-
-Save Results
-
-
-
----
+| Component | Role |
+|-----------|------|
+| Python worker | DNS / HTTP / technology / risk checks |
+| RabbitMQ | Async `scan_jobs` |
+| Redis | Cache dashboard / scan status |
+| Elasticsearch | Worker logs / events |
 
 # Database
 
+```mermaid
+erDiagram
+  COMPANY ||--o{ SCAN : "has many"
+  SCAN ||--o{ VULNERABILITY : "has many"
 
-## PostgreSQL
+  COMPANY {
+    uint id PK
+    string name
+    string domain UK
+  }
 
+  SCAN {
+    uint id PK
+    uint company_id FK
+    string status
+    int risk_score
+  }
 
-Tables:
+  VULNERABILITY {
+    uint id PK
+    uint scan_id FK
+    string title
+    string severity
+  }
+```
 
+One **company** has many **scans**. One **scan** has many **vulnerabilities**.
 
-## companies
+**Scan status:** `PENDING` · `RUNNING` · `COMPLETED` · `FAILED`  
+**Severity:** `LOW` · `MEDIUM` · `HIGH` · `CRITICAL`
 
+# Project structure
 
-id
-name
-domain
-created_at
-
-
-
-## scans
-
-
-id
-company_id
-status
-risk_score
-created_at
-finished_at
-
-
-
-## vulnerabilities
-
-
-id
-scan_id
-title
-severity
-description
-
-
-
----
-
-# Redis
-
-
-Used for caching:
-
-
-Examples:
-
-
-
-dashboard_statistics
-
-company_scan_status
-
-
-
----
-
-# Elasticsearch
-
-
-Used for:
-
-
-- worker logs
-- security events
-- scan history
-
-
-Example:
-
-
-
-{
-service:"scanner",
-
-level:"WARNING",
-
-message:"Missing HTTPS security header"
-
-}
-
-
-
----
-
-# 📂 Project Structure
-
-
-
+```text
 CyberWatch/
-
-├── frontend/
-
-│
-
-├── backend-api/
-
-│
-
-├── worker/
-
-│
-
-├── infrastructure/
-
-│
-
+├── frontend/           # React UI + OIDC
+├── backend-api/        # Go REST API + JWT/RBAC
+├── docs/               # Keycloak setup
+├── worker/             # Planned — Python scanner
+├── infrastructure/     # Planned — Docker
+├── DEVELOPMENT_PLAN.md
 └── README.md
+```
 
+# Getting started
 
+**Need:** Node.js, Go, PostgreSQL, Cloud-IAM Keycloak ([guide](docs/KEYCLOAK.md))
 
----
+```powershell
+# API
+cd backend-api
+copy .env.example .env   # DATABASE_* + KEYCLOAK_*
+go mod tidy
+go run ./cmd/server      # http://localhost:8080/health
 
-# Development Order
+# UI
+cd frontend
+copy .env.example .env   # VITE_API_URL + VITE_KEYCLOAK_*
+npm install
+npm run dev              # http://localhost:5173 → Keycloak
+```
 
+More detail: [`backend-api/README.md`](backend-api/README.md) · [`frontend/README.md`](frontend/README.md)
 
-The project must be developed in this order:
+# Development order
 
+| # | Phase | Status |
+|---|-------|--------|
+| 1 | React dashboard | **Done** |
+| 2 | Go API + PostgreSQL | **Done** |
+| 3 | Keycloak OIDC + JWT RBAC | **Done** |
+| 4 | Python scanner worker | Next |
+| 5 | RabbitMQ | Planned |
+| 6–9 | Redis · ES · Docker · CI/CD | Planned |
 
-## 1. React + Chakra UI
+Full checklist: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
 
-Create:
+# Security rules
 
-- Login page
-- Dashboard
-- Companies page
-- Scan results page
+- No secrets in source — use `.env`
+- Validate API inputs
+- Protect `/api/*` with JWT + roles
+- Passwords live in Keycloak only
 
+# Project objective
 
----
-
-## 2. Go API
-
-Create:
-
-- REST endpoints
-- PostgreSQL connection
-- Authentication middleware
-
-
----
-
-## 3. PostgreSQL
-
-Create:
-
-- database models
-- migrations
-
-
----
-
-## 4. Keycloak
-
-Implement:
-
-- login
-- JWT validation
-- roles
-
-
----
-
-## 5. Python Worker
-
-Implement:
-
-- RabbitMQ consumer
-- DNS scanner
-- HTTP scanner
-- Security checks
-
-
----
-
-## 6. RabbitMQ
-
-Connect:
-
-Go API → Worker
-
-
----
-
-## 7. Redis
-
-Add caching.
-
-
----
-
-## 8. Elasticsearch
-
-Add logs.
-
-
----
-
-## 9. Docker Compose
-
-Containerize services.
-
-
----
-
-## 10. CI/CD
-
-Add GitHub Actions.
-
-
----
-
-# 🔒 Security Rules
-
-
-Always:
-
-
-- never store secrets in code
-- use environment variables
-- validate inputs
-- protect APIs
-- follow secure coding practices
-
-
----
-
-# 🎯 Project Objective
-
-
-This project demonstrates the ability to build:
-
-- secure full-stack applications
-- distributed systems
-- cybersecurity oriented platforms
-- scalable architectures
-
-
-Inspired by:
-
-AlgoSecure AlgoLightHouse technical environment.
+Show the ability to build a secure full-stack cybersecurity monitoring platform with a distributed architecture close to real products — inspired by AlgoSecure AlgoLightHouse.

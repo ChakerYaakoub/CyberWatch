@@ -1,605 +1,150 @@
-# \# 🛠 CyberWatch Development Plan
+# CyberWatch Development Plan
 
-#
+## Goal
 
-#
+Build a small but realistic cybersecurity monitoring platform.
 
-# \## Goal
+**Priorities:** functional app · clean architecture · security · demo quality
 
-#
+---
 
-# Build a small but realistic cybersecurity monitoring platform.
+## Progress
 
-#
+| Phase | Topic | Status |
+|-------|-------|--------|
+| 1 | Frontend (React) | **Done** |
+| 2 | Go API + PostgreSQL | **Done** |
+| 3 | Keycloak IAM | **Done** |
+| 4 | Python scanner worker | Next |
+| 5 | RabbitMQ | Planned |
+| 6 | Redis | Planned |
+| 7 | Elasticsearch | Planned |
+| 8 | Docker Compose | Planned |
+| 9 | Demo preparation | Planned |
 
-#
+---
 
-# The priority is:
+## System relations (target)
 
-#
+Matches the app today; dashed edges are not implemented yet.
 
-# 1\. Functional application
+```mermaid
+flowchart TB
+  User["User ADMIN / ANALYST"] --> FE[React frontend]
+  FE -->|"OIDC"| KC[Keycloak]
+  FE -->|"Bearer JWT"| API[Go API]
+  API -->|"JWKS verify"| KC
+  API --> DB[(PostgreSQL)]
+  API -.-> MQ[RabbitMQ]
+  MQ -.-> Worker[Python worker]
+  Worker -.-> DB
+```
 
-# 2\. Clean architecture
+| Relation | Status |
+|----------|--------|
+| User → React → Keycloak → API → PostgreSQL | **Done** |
+| API → RabbitMQ → Worker → DB | Planned |
 
-# 3\. Security
+Public overview: [`README.md`](README.md)
 
-# 4\. Demonstration quality
+---
 
-#
+## Phase 1 — Frontend ✅
 
-#
+`frontend/` — React · TypeScript · Vite · Chakra · TanStack Query · Axios · Recharts · oidc-client-ts
 
-# \---
+**Done:**
 
-#
+- Dashboard, Companies, Scan details
+- Keycloak login (no local login page)
+- Protected routes + Bearer token on API calls
+- AlgoSecure-inspired UI (green `#80B942`, navy) + light/dark mode
 
-# \# Phase 1 — Frontend
+See [`frontend/README.md`](frontend/README.md).
 
-#
+---
 
-#
+## Phase 2 — Go API + PostgreSQL ✅
 
-# Create React application.
+`backend-api/` — Go · Gin · GORM · PostgreSQL
 
-#
+**Done:**
 
-#
+- Layers: handlers → services → repositories → models
+- `Company` → `Scan` → `Vulnerability`
+- Routes: health, dashboard, companies CRUD, scans
+- Env-based config
 
-# Stack:
+See [`backend-api/README.md`](backend-api/README.md).
 
-#
+---
 
-#
+## Phase 3 — Keycloak ✅
 
-# \- React
+Hosted via Cloud-IAM.
 
-# \- TypeScript
+| Item | Value |
+|------|-------|
+| Frontend client | `cyberwatch-frontend` (public, PKCE) |
+| API client | `cyberwatch-api` (JWKS validation) |
+| Roles | `ADMIN`, `ANALYST` |
 
-# \- Vite
+**Flow:** React → Keycloak → `/auth/callback` → Bearer token → Go API JWT + RBAC
 
-# \- Chakra UI
+Guide: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
-#
+---
 
-#
+## Phase 4 — Python scanner (next)
 
-# Features:
+`worker/` modules: `dns.py` · `http.py` · `technology.py` · `risk.py`
 
-#
+Scans stay `PENDING` until this phase runs real checks.
 
-#
+---
 
-# \## Authentication UI
+## Phase 5 — RabbitMQ
 
-#
+- Queue `scan_jobs`
+- API publishes on scan create
+- Worker consumes and writes results to PostgreSQL
 
-# Pages:
+---
 
-#
+## Phase 6 — Redis
 
-# \- Login
+Cache dashboard stats and scan status.
 
-#
+---
 
-#
+## Phase 7 — Elasticsearch
 
-# \## Dashboard
+Worker logs and scan events.
 
-#
+---
 
-# Display:
+## Phase 8 — Docker
 
-#
+Compose: frontend · api · worker · postgres · rabbitmq · redis · elasticsearch  
+Keycloak stays on Cloud-IAM unless moved later.
 
-# \- Risk score
+---
 
-# \- Scan history
+## Phase 9 — Demo
 
-# \- Vulnerabilities
+1. Login (Keycloak)
+2. Add company (`ADMIN`)
+3. Start scan
+4. Worker runs (after phases 4–5)
+5. Results on dashboard
 
-#
+> I built a simplified External Attack Surface Monitoring platform using a distributed architecture close to real cybersecurity products.
 
-#
+---
 
-# \## Companies
+## Security rules
 
-#
-
-#
-
-# CRUD:
-
-#
-
-#
-
-# \- create company
-
-# \- list companies
-
-#
-
-#
-
-# \## Scan
-
-#
-
-#
-
-# Button:
-
-#
-
-#
-
-# START SCAN
-
-#
-
-#
-
-# Display:
-
-#
-
-# \- running status
-
-# \- results
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 2 — Go API
-
-#
-
-#
-
-# Create:
-
-#
-
-#
-
-# \- Gin server
-
-# \- routes
-
-# \- services
-
-# \- database layer
-
-#
-
-#
-
-# Endpoints:
-
-#
-
-#
-
-#
-
-# GET /companies
-
-#
-
-# POST /companies
-
-#
-
-# POST /scans
-
-#
-
-# GET /scans/:id
-
-#
-
-# GET /dashboard
-
-#
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 3 — PostgreSQL
-
-#
-
-#
-
-# Create models:
-
-#
-
-#
-
-# Company
-
-#
-
-# Scan
-
-#
-
-# Finding
-
-#
-
-#
-
-# Add migrations.
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 4 — Keycloak
-
-#
-
-#
-
-# Setup:
-
-#
-
-#
-
-# Realm:
-
-#
-
-#
-
-# cyberwatch
-
-#
-
-#
-
-#
-
-# Clients:
-
-#
-
-#
-
-# frontend
-
-# api
-
-#
-
-#
-
-#
-
-# Roles:
-
-#
-
-#
-
-#
-
-# ADMIN
-
-#
-
-# ANALYST
-
-#
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 5 — Python Scanner
-
-#
-
-#
-
-# Create worker.
-
-#
-
-#
-
-# Modules:
-
-#
-
-#
-
-#
-
-# scanner/
-
-#
-
-# ├── dns.py
-
-#
-
-# ├── http.py
-
-#
-
-# ├── technology.py
-
-#
-
-# ├── risk.py
-
-#
-
-#
-
-#
-
-# Example:
-
-#
-
-#
-
-# Input:
-
-#
-
-#
-
-# example.com
-
-#
-
-#
-
-#
-
-# Output:
-
-#
-
-#
-
-#
-
-# IP found
-
-#
-
-# HTTPS enabled
-
-#
-
-# Missing CSP header
-
-#
-
-# Risk Score 75
-
-#
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 6 — RabbitMQ
-
-#
-
-#
-
-# Create queue:
-
-#
-
-#
-
-#
-
-# scan_jobs
-
-#
-
-#
-
-#
-
-# Go:
-
-#
-
-# publish job
-
-#
-
-#
-
-# Python:
-
-#
-
-# consume job
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 7 — Redis
-
-#
-
-#
-
-# Cache:
-
-#
-
-#
-
-# \- dashboard statistics
-
-# \- scan status
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 8 — Elasticsearch
-
-#
-
-#
-
-# Store:
-
-#
-
-#
-
-# \- worker logs
-
-# \- scan events
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 9 — Docker
-
-#
-
-#
-
-# Services:
-
-#
-
-#
-
-#
-
-# frontend
-
-#
-
-# api
-
-#
-
-# worker
-
-#
-
-# postgres
-
-#
-
-# keycloak
-
-#
-
-# rabbitmq
-
-#
-
-# redis
-
-#
-
-# elasticsearch
-
-#
-
-#
-
-#
-
-# \---
-
-#
-
-# \# Phase 10 — Demo Preparation
-
-#
-
-#
-
-# Demo scenario:
-
-#
-
-#
-
-# 1\. Login with Keycloak
-
-#
-
-# 2\. Add company
-
-#
-
-# 3\. Start scan
-
-#
-
-# 4\. Worker executes scan
-
-#
-
-# 5\. Results appear
-
-#
-
-#
-
-# Presentation message:
-
-#
-
-#
-
-# "I built a simplified External Attack Surface Monitoring platform using a distributed architecture close to real cybersecurity products."
+- No secrets in code
+- Env vars only
+- JWT + roles on API
+- Keycloak owns passwords
