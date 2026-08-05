@@ -27,7 +27,7 @@ It provides a full-stack application to:
 | React frontend (dashboard, companies, scans) | **Done** |
 | Go REST API + PostgreSQL | **Done** |
 | Keycloak IAM (hosted Cloud-IAM) | **Done** |
-| Python scanner worker | Planned |
+| Python scanner worker (FastAPI `/scan`) | **Done** |
 | RabbitMQ async jobs | Planned |
 | Redis / Elasticsearch / Docker / CI | Planned |
 
@@ -60,9 +60,12 @@ flowchart TB
     DB[("PostgreSQL<br/>companies · scans · vulnerabilities")]
   end
 
-  subgraph Future["Scan pipeline — Planned"]
+  subgraph Scanner["Scanner — Done"]
+    Worker["Python worker :8001<br/>FastAPI · DNS · HTTP · headers · tech · ports · risk"]
+  end
+
+  subgraph Future["Async jobs — Planned"]
     MQ[["RabbitMQ<br/>scan_jobs"]]
-    Worker["Python worker"]
   end
 
   User -->|"opens UI"| FE
@@ -71,9 +74,10 @@ flowchart TB
   FE -->|"2. REST /api/* + Bearer JWT"| API
   API -->|"3. verify JWT (JWKS)"| KC
   API -->|"4. CRUD / queries"| DB
-  API -.->|"5. publish scan job"| MQ
-  MQ -.->|"6. consume"| Worker
-  Worker -.->|"7. write findings"| DB
+  API -.->|"5. POST /scan (dev)"| Worker
+  API -.->|"6. publish job"| MQ
+  MQ -.->|"7. consume"| Worker
+  Worker -->|"8. findings JSON"| API
 ```
 
 ### How pieces relate (today)
@@ -86,6 +90,7 @@ flowchart TB
 | Go API | Keycloak | Validates JWT signature using realm JWKS |
 | Go API | PostgreSQL | Stores companies, scans, vulnerabilities |
 | Go API | User roles | `ADMIN` / `ANALYST` enforce write permissions |
+| Python worker | — | Standalone `POST /scan` passive engine (RabbitMQ later) |
 
 ### Auth flow
 
@@ -108,17 +113,19 @@ sequenceDiagram
   API->>FE: JSON { data } or error
 ```
 
-### Planned scan flow
+### Planned async scan flow
 
-Today a scan is created as `PENDING`. Execution starts when the worker pipeline is built.
+Worker is ready today via HTTP. RabbitMQ replaces the direct call in the next phase.
 
 ```mermaid
 flowchart LR
-  FE[React: Start scan] --> API[Go API: create Scan PENDING]
-  API -.-> MQ[RabbitMQ]
-  MQ -.-> W[Python worker]
-  W -.-> DB[(PostgreSQL: findings + score)]
-  DB --> FE2[React: dashboard / scan details]
+  FE[React: Start scan] --> API[Go API]
+  API -.->|dev: HTTP| W[Python worker POST /scan]
+  API -.->|next: queue| MQ[RabbitMQ]
+  MQ -.-> W
+  W -->|JSON findings| API
+  API --> DB[(PostgreSQL)]
+  DB --> FE2[Dashboard / scan details]
 ```
 
 # Technology stack
@@ -138,6 +145,12 @@ flowchart LR
 - JWT via Keycloak JWKS
 - RBAC middleware on `/api/*` (`GET /health` is public)
 
+## Scanner worker (`worker/`)
+
+- Python 3.12+ · FastAPI · Uvicorn · Pydantic
+- Passive checks: DNS · HTTP · security headers · technologies · common ports · risk score
+- `POST /scan` — see [`worker/README.md`](worker/README.md)
+
 ## Authentication (Keycloak)
 
 | Role | Can do |
@@ -151,8 +164,7 @@ Setup: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
 | Component | Role |
 |-----------|------|
-| Python worker | DNS / HTTP / technology / risk checks |
-| RabbitMQ | Async `scan_jobs` |
+| RabbitMQ | Async `scan_jobs` (replace direct HTTP to worker) |
 | Redis | Cache dashboard / scan status |
 | Elasticsearch | Worker logs / events |
 
@@ -195,13 +207,12 @@ One **company** has many **scans**. One **scan** has many **vulnerabilities**.
 CyberWatch/
 ├── frontend/           # React UI + OIDC
 ├── backend-api/        # Go REST API + JWT/RBAC
+├── worker/             # Python passive scanner (FastAPI)
 ├── docs/               # Keycloak setup
-├── worker/             # Planned — Python scanner
 ├── infrastructure/     # Planned — Docker
 ├── DEVELOPMENT_PLAN.md
 └── README.md
 ```
-
 # Getting started
 
 **Need:** Node.js, Go, PostgreSQL, Cloud-IAM Keycloak ([guide](docs/KEYCLOAK.md))
@@ -229,8 +240,8 @@ More detail: [`backend-api/README.md`](backend-api/README.md) · [`frontend/READ
 | 1 | React dashboard | **Done** |
 | 2 | Go API + PostgreSQL | **Done** |
 | 3 | Keycloak OIDC + JWT RBAC | **Done** |
-| 4 | Python scanner worker | Next |
-| 5 | RabbitMQ | Planned |
+| 4 | Python scanner worker | **Done** |
+| 5 | RabbitMQ | Next |
 | 6–9 | Redis · ES · Docker · CI/CD | Planned |
 
 Full checklist: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)

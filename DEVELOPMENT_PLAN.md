@@ -15,8 +15,8 @@ Build a small but realistic cybersecurity monitoring platform.
 | 1 | Frontend (React) | **Done** |
 | 2 | Go API + PostgreSQL | **Done** |
 | 3 | Keycloak IAM | **Done** |
-| 4 | Python scanner worker | Next |
-| 5 | RabbitMQ | Planned |
+| 4 | Python scanner worker | **Done** |
+| 5 | RabbitMQ | Next |
 | 6 | Redis | Planned |
 | 7 | Elasticsearch | Planned |
 | 8 | Docker Compose | Planned |
@@ -24,9 +24,7 @@ Build a small but realistic cybersecurity monitoring platform.
 
 ---
 
-## System relations (target)
-
-Matches the app today; dashed edges are not implemented yet.
+## System relations
 
 ```mermaid
 flowchart TB
@@ -35,15 +33,17 @@ flowchart TB
   FE -->|"Bearer JWT"| API[Go API]
   API -->|"JWKS verify"| KC
   API --> DB[(PostgreSQL)]
+  API -.->|"dev HTTP"| Worker[Python worker]
   API -.-> MQ[RabbitMQ]
-  MQ -.-> Worker[Python worker]
-  Worker -.-> DB
+  MQ -.-> Worker
+  Worker -->|"findings JSON"| API
 ```
 
 | Relation | Status |
 |----------|--------|
 | User → React → Keycloak → API → PostgreSQL | **Done** |
-| API → RabbitMQ → Worker → DB | Planned |
+| Python worker `POST /scan` (standalone) | **Done** |
+| API → RabbitMQ → Worker | Planned |
 
 Public overview: [`README.md`](README.md)
 
@@ -53,12 +53,7 @@ Public overview: [`README.md`](README.md)
 
 `frontend/` — React · TypeScript · Vite · Chakra · TanStack Query · Axios · Recharts · oidc-client-ts
 
-**Done:**
-
-- Dashboard, Companies, Scan details
-- Keycloak login (no local login page)
-- Protected routes + Bearer token on API calls
-- AlgoSecure-inspired UI (green `#80B942`, navy) + light/dark mode
+**Done:** Dashboard · Companies · Scan details · Keycloak OIDC · AlgoSecure UI + light/dark mode
 
 See [`frontend/README.md`](frontend/README.md).
 
@@ -68,12 +63,7 @@ See [`frontend/README.md`](frontend/README.md).
 
 `backend-api/` — Go · Gin · GORM · PostgreSQL
 
-**Done:**
-
-- Layers: handlers → services → repositories → models
-- `Company` → `Scan` → `Vulnerability`
-- Routes: health, dashboard, companies CRUD, scans
-- Env-based config
+**Done:** Company → Scan → Vulnerability · JWT-ready routes · env config
 
 See [`backend-api/README.md`](backend-api/README.md).
 
@@ -81,33 +71,42 @@ See [`backend-api/README.md`](backend-api/README.md).
 
 ## Phase 3 — Keycloak ✅
 
-Hosted via Cloud-IAM.
-
-| Item | Value |
-|------|-------|
-| Frontend client | `cyberwatch-frontend` (public, PKCE) |
-| API client | `cyberwatch-api` (JWKS validation) |
-| Roles | `ADMIN`, `ANALYST` |
-
-**Flow:** React → Keycloak → `/auth/callback` → Bearer token → Go API JWT + RBAC
+Hosted Cloud-IAM · clients `cyberwatch-frontend` / `cyberwatch-api` · roles `ADMIN` / `ANALYST`
 
 Guide: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
 ---
 
-## Phase 4 — Python scanner (next)
+## Phase 4 — Python scanner ✅
 
-`worker/` modules: `dns.py` · `http.py` · `technology.py` · `risk.py`
+`worker/` — FastAPI standalone (no RabbitMQ yet).
 
-Scans stay `PENDING` until this phase runs real checks.
+**Pipeline:** validate → DNS → HTTP → headers → technologies → ports → risk → JSON
+
+**Run:**
+
+```powershell
+cd worker
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+`POST /scan` with `{ "domain": "example.com" }`
+
+Business logic is in `ScanService` — queue transport can wrap it later.
+
+See [`worker/README.md`](worker/README.md).
 
 ---
 
-## Phase 5 — RabbitMQ
+## Phase 5 — RabbitMQ (next)
 
 - Queue `scan_jobs`
 - API publishes on scan create
-- Worker consumes and writes results to PostgreSQL
+- Worker consumes and returns / persists findings
+- Replace temporary direct HTTP call
 
 ---
 
@@ -135,7 +134,7 @@ Keycloak stays on Cloud-IAM unless moved later.
 1. Login (Keycloak)
 2. Add company (`ADMIN`)
 3. Start scan
-4. Worker runs (after phases 4–5)
+4. Worker executes (HTTP now / RabbitMQ next)
 5. Results on dashboard
 
 > I built a simplified External Attack Surface Monitoring platform using a distributed architecture close to real cybersecurity products.
@@ -148,3 +147,4 @@ Keycloak stays on Cloud-IAM unless moved later.
 - Env vars only
 - JWT + roles on API
 - Keycloak owns passwords
+- Worker: passive checks only, short timeouts, fixed port list

@@ -1,0 +1,1 @@
+"""CyberWatch Python scanner worker."""
