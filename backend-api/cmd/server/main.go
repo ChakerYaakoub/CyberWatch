@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/cyberwatch/backend-api/internal/cache"
 	"github.com/cyberwatch/backend-api/internal/config"
 	"github.com/cyberwatch/backend-api/internal/database"
 	"github.com/cyberwatch/backend-api/internal/handlers"
@@ -57,9 +58,19 @@ func main() {
 	scanRepo := repositories.NewScanRepository(db)
 	vulnRepo := repositories.NewVulnerabilityRepository(db)
 
-	companyService := services.NewCompanyService(companyRepo)
-	scanService := services.NewScanService(scanRepo, companyRepo, publisher)
-	dashboardService := services.NewDashboardService(companyRepo, scanRepo, vulnRepo)
+	appCache, err := cache.NewFromURL(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("redis cache setup failed: %v", err)
+	}
+	defer func() {
+		if err := appCache.Close(); err != nil {
+			log.Printf("cache close: %v", err)
+		}
+	}()
+
+	companyService := services.NewCompanyService(companyRepo, appCache)
+	scanService := services.NewScanService(scanRepo, companyRepo, publisher, appCache)
+	dashboardService := services.NewDashboardService(companyRepo, scanRepo, vulnRepo, appCache)
 
 	router := routes.Setup(cfg.CORSOrigin, routes.Handlers{
 		Companies: handlers.NewCompanyHandler(companyService),

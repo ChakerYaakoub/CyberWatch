@@ -1,31 +1,45 @@
 package services
 
 import (
+	"context"
 	"math"
 
+	"github.com/cyberwatch/backend-api/internal/cache"
 	"github.com/cyberwatch/backend-api/internal/models"
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
 
 type DashboardService struct {
-	companies      *repositories.CompanyRepository
-	scans          *repositories.ScanRepository
+	companies       *repositories.CompanyRepository
+	scans           *repositories.ScanRepository
 	vulnerabilities *repositories.VulnerabilityRepository
+	cache           cache.Cache
 }
 
 func NewDashboardService(
 	companies *repositories.CompanyRepository,
 	scans *repositories.ScanRepository,
 	vulnerabilities *repositories.VulnerabilityRepository,
+	c cache.Cache,
 ) *DashboardService {
+	if c == nil {
+		c = cache.NewNoop()
+	}
 	return &DashboardService{
 		companies:       companies,
 		scans:           scans,
 		vulnerabilities: vulnerabilities,
+		cache:           c,
 	}
 }
 
 func (s *DashboardService) GetStats() (*DashboardStats, error) {
+	ctx := context.Background()
+	var cached DashboardStats
+	if s.cache.Get(ctx, cache.KeyDashboardStats, &cached) {
+		return &cached, nil
+	}
+
 	companyCount, err := s.companies.Count()
 	if err != nil {
 		return nil, err
@@ -55,10 +69,12 @@ func (s *DashboardService) GetStats() (*DashboardStats, error) {
 		securityScore = int(math.Round(avgScore))
 	}
 
-	return &DashboardStats{
+	stats := &DashboardStats{
 		SecurityScore:           securityScore,
 		Companies:               companyCount,
 		ActiveScans:             activeScans,
 		CriticalVulnerabilities: criticalCount,
-	}, nil
+	}
+	s.cache.Set(ctx, cache.KeyDashboardStats, stats, cache.TTLDashboard)
+	return stats, nil
 }
