@@ -14,7 +14,7 @@ backend-api/
 ├── cmd/server/          # App entrypoint
 ├── internal/
 │   ├── auth/            # Role constants (ADMIN, ANALYST)
-│   ├── config/          # Loads env vars (.env)
+│   ├── config/          # Loads env from infrastructure/.env
 │   ├── database/        # PostgreSQL connection + AutoMigrate
 │   ├── models/          # GORM entities (Company, Scan, Vulnerability)
 │   ├── repositories/    # Database access
@@ -81,11 +81,13 @@ CREATE DATABASE cyberwatch;
 
 ### 2. Environment
 
+All apps share **one** file: [`infrastructure/.env`](../infrastructure/.env.example).
+
 ```powershell
-copy .env.example .env
+copy infrastructure\.env.example infrastructure\.env
 ```
 
-Edit `.env`:
+Key variables for the API:
 
 ```env
 APP_PORT=8080

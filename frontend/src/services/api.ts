@@ -6,7 +6,7 @@ const apiBaseURL = import.meta.env.VITE_API_URL
 
 if (!apiBaseURL) {
   throw new Error(
-    'Missing VITE_API_URL. Copy frontend/.env.example to frontend/.env and set the API base URL.',
+    'Missing VITE_API_URL. Set it in infrastructure/.env (copy from infrastructure/.env.example).',
   )
 }
 

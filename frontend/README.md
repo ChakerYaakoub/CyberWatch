@@ -21,7 +21,7 @@ frontend/
 │   ├── services/        # Axios API clients
 │   ├── types/           # Shared TypeScript types
 │   └── utils/           # Mappers / helpers
-├── .env.example
+├── vite.config.ts       # envDir → ../infrastructure
 └── package.json
 ```
 
@@ -31,10 +31,10 @@ There is **no local login page** — authentication is handled by hosted Keycloa
 
 1. Configure Keycloak — see [`docs/KEYCLOAK.md`](../docs/KEYCLOAK.md)
 2. Ensure the Go API is running on port `8080`
-3. Configure env:
+3. Configure the **shared** env (`infrastructure/.env`):
 
 ```powershell
-copy .env.example .env
+copy infrastructure\.env.example infrastructure\.env
 ```
 
 ```env

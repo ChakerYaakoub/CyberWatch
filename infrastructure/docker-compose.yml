@@ -1,0 +1,142 @@
+# CyberWatch — production-like local stack
+# Usage (from this directory):
+#   docker compose up --build
+#   docker compose down
+#
+# Single env file: infrastructure/.env (copy from .env.example)
+
+name: cyberwatch
+
+x-env-file: &env-file
+  env_file:
+    - .env
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyberwatch-postgres
+    restart: unless-stopped
+    <<: *env-file
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:?Set DATABASE_USER in infrastructure/.env}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in infrastructure/.env}
+      POSTGRES_DB: ${DATABASE_NAME:?Set DATABASE_NAME in infrastructure/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cyberwatch-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: cyberwatch-rabbitmq
+    restart: unless-stopped
+    <<: *env-file
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infrastructure/.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infrastructure/.env}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - cyberwatch-network
+    healthcheck:
+      # ping can pass before AMQP listener is ready — wait for ports
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend-api:
+    build:
+      context: ../backend-api
+      dockerfile: Dockerfile
+    container_name: cyberwatch-backend-api
+    restart: unless-stopped
+    <<: *env-file
+    environment:
+      DATABASE_HOST: postgres
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      WORKER_URL: http://worker:8001
+      APP_ENV: production
+    ports:
+      - "8080:8080"
+    networks:
+      - cyberwatch-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+      start_period: 45s
+
+  worker:
+    build:
+      context: ../worker
+      dockerfile: Dockerfile
+    container_name: cyberwatch-worker
+    restart: unless-stopped
+    <<: *env-file
+    environment:
+      DATABASE_HOST: postgres
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    # Default: RabbitMQ consumer. For SCAN_MODE=http / API debug:
+    #   command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "8001:8001"
+    networks:
+      - cyberwatch-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      backend-api:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL}
+        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID}
+    container_name: cyberwatch-frontend
+    restart: unless-stopped
+    <<: *env-file
+    ports:
+      - "5173:5173"
+    networks:
+      - cyberwatch-network
+    depends_on:
+      backend-api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  cyberwatch-network:
+    driver: bridge
+    name: cyberwatch-network

@@ -47,8 +47,7 @@ cd worker
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env
-# Fill DATABASE_* (same as backend-api) and RABBITMQ_URL if using the consumer
+# Uses shared infrastructure/.env (copy from .env.example if needed)
 ```
 
 ## Run — development (HTTP)

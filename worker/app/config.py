@@ -7,7 +7,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Deploy-sensitive values come from environment / .env — no secret defaults."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(
+            "infrastructure/.env",
+            "../infrastructure/.env",
+            ".env",
+        ),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "CyberWatch Scanner Worker"
     app_env: str = "development"
@@ -53,5 +61,5 @@ def get_settings() -> Settings:
 def require_rabbitmq_url(settings: Settings) -> None:
     if not settings.rabbitmq_url.strip():
         raise RuntimeError(
-            "RABBITMQ_URL is required to run the consumer (set it in worker/.env)"
+            "RABBITMQ_URL is required to run the consumer (set it in infrastructure/.env)"
         )

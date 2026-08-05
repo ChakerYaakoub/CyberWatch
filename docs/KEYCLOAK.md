@@ -22,17 +22,19 @@ The **realm** is usually the deployment name in lowercase. Use the exact name Cl
 
 ## 2. Environment variables
 
-### Backend — `backend-api/.env`
+All apps share **one** file: [`infrastructure/.env`](../infrastructure/.env.example).
+
+```powershell
+copy infrastructure\.env.example infrastructure\.env
+```
 
 ```env
+# API
 KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
 KEYCLOAK_REALM=<your-realm>
 KEYCLOAK_CLIENT_ID=cyberwatch-api
-```
 
-### Frontend — `frontend/.env`
-
-```env
+# Frontend
 VITE_API_URL=http://localhost:8080/api
 VITE_KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
 VITE_KEYCLOAK_REALM=<your-realm>

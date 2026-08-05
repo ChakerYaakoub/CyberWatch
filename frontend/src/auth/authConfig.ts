@@ -4,7 +4,7 @@ const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID
 
 if (!keycloakUrl || !realm || !clientId) {
   throw new Error(
-    'Missing Keycloak env. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID in frontend/.env',
+    'Missing Keycloak env. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID in infrastructure/.env',
   )
 }
 

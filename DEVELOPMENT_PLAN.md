@@ -17,10 +17,11 @@ Build a small but realistic cybersecurity monitoring platform.
 | 3 | Keycloak IAM | **Done** |
 | 4 | Python scanner worker | **Done** |
 | 5 | RabbitMQ async pipeline | **Done** |
-| 6 | Redis | Planned |
-| 7 | Elasticsearch | Planned |
-| 8 | Docker Compose | Planned |
+| 8 | Docker Compose | **Done** |
 | 9 | Demo preparation | Planned |
+| 10 | GitHub Actions (CI/CD) | Planned |
+| 6 | Redis | Later |
+| 7 | Elasticsearch | Later |
 
 ---
 
@@ -101,9 +102,27 @@ python -m app.consumer
 
 ---
 
-## Phase 6–9
+## Phase 8 — Docker Compose ✅
 
-Redis · Elasticsearch · Docker Compose · Demo prep — planned.
+Stack under `infrastructure/docker-compose.yml`:
+
+- **Services:** frontend · backend-api · worker · postgres · rabbitmq  
+- **Not included:** Redis · Elasticsearch · Keycloak (Cloud-IAM stays external)  
+- **Network:** `cyberwatch-network`  
+- **Volumes:** `postgres_data` · `rabbitmq_data`  
+- **Secrets:** single `infrastructure/.env` (create once from `.env.example` only if `.env` does not exist yet)
+
+```powershell
+cd infrastructure
+docker compose up --build
+docker compose down
+```
+
+See root [`README.md`](README.md) for URLs, volumes, and `SCAN_MODE` notes.
+
+## Phase 6–7 · 9–10
+
+Redis · Elasticsearch (later) · Demo prep · CI/CD — planned.
 
 ---
 

@@ -7,6 +7,7 @@
 ![Go](https://img.shields.io/badge/API-Go-00ADD8)
 ![Keycloak](https://img.shields.io/badge/Auth-Keycloak-red)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![Docker](https://img.shields.io/badge/Infra-Docker%20Compose-2496ED)
 
 # Project overview
 
@@ -29,7 +30,8 @@ It provides a full-stack application to:
 | Keycloak IAM (hosted Cloud-IAM) | **Done** |
 | Python scanner worker (FastAPI `/scan`) | **Done** |
 | Async scans — HTTP `/jobs` + RabbitMQ | **Done** |
-| Redis / Elasticsearch / Docker / CI | Planned |
+| Docker Compose (infra) | **Done** |
+| Redis / Elasticsearch / CI | Planned |
 
 # Business context
 
@@ -61,11 +63,15 @@ flowchart TB
   end
 
   subgraph Scanner["Scanner — Done"]
-    Worker["Python worker :8001<br/>ScanService · /scan · /jobs · consumer"]
+    Worker["Python worker :8001<br/>ScanService · /jobs · consumer"]
   end
 
   subgraph Bus["Messaging — Done"]
     MQ[["RabbitMQ<br/>cyberwatch.scans / scan_jobs"]]
+  end
+
+  subgraph Docker["Docker Compose — Done"]
+    DC["infrastructure/docker-compose.yml<br/>cyberwatch-network"]
   end
 
   User -->|"opens UI"| FE
@@ -78,7 +84,27 @@ flowchart TB
   API -->|"5b. SCAN_MODE=rabbitmq"| MQ
   MQ -->|"6. consume"| Worker
   Worker -->|"7. status + findings"| DB
+  DC -.->|"runs"| FE
+  DC -.->|"runs"| API
+  DC -.->|"runs"| Worker
+  DC -.->|"runs"| DB
+  DC -.->|"runs"| MQ
 ```
+
+### Docker stack (Phase 8)
+
+```mermaid
+flowchart LR
+  FE[frontend :5173] --> API[backend-api :8080]
+  API --> PG[(postgres)]
+  API --> MQ[rabbitmq :5672 / UI :15672]
+  MQ --> W[worker consumer]
+  W --> PG
+  FE -.->|OIDC external| KC[Keycloak Cloud-IAM]
+  API -.->|JWKS| KC
+```
+
+**Not in Compose (by design):** Redis · Elasticsearch · Keycloak (remains Cloud-IAM).
 
 ### How pieces relate (today)
 
@@ -165,6 +191,13 @@ Statuses: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 
 Setup: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
+## Infrastructure (`infrastructure/`)
+
+- Docker Compose: frontend · backend-api · worker · postgres · rabbitmq
+- Network: `cyberwatch-network`
+- Volumes: `postgres_data` · `rabbitmq_data`
+- Keycloak stays external (Cloud-IAM)
+
 ## Planned
 
 | Component | Role |
@@ -209,28 +242,100 @@ One **company** has many **scans**. One **scan** has many **vulnerabilities**.
 
 ```text
 CyberWatch/
-├── frontend/           # React UI + OIDC
-├── backend-api/        # Go REST API + JWT/RBAC
-├── worker/             # Python passive scanner (FastAPI)
+├── frontend/           # React UI + OIDC (+ Dockerfile)
+├── backend-api/        # Go REST API (+ Dockerfile)
+├── worker/             # Python scanner (+ Dockerfile)
+├── infrastructure/     # docker-compose.yml + single .env
 ├── docs/               # Keycloak setup
-├── infrastructure/     # Planned — Docker
 ├── DEVELOPMENT_PLAN.md
 └── README.md
 ```
-# Getting started
+
+# Getting started (Docker Compose)
+
+**Prerequisites**
+
+- [Docker](https://docs.docker.com/get-docker/) with Compose v2
+- Hosted Keycloak (Cloud-IAM) configured per [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
+
+**1. Single environment file** (secrets stay in `.env` only — never in `docker-compose.yml`)
+
+Use `infrastructure/.env`. Create it **only once** if it does not exist yet:
+
+```powershell
+# only if infrastructure\.env is missing
+copy infrastructure\.env.example infrastructure\.env
+```
+
+Edit that file for DB, Keycloak, RabbitMQ, `VITE_*`, `SCAN_MODE`.
+
+Compose overrides Docker DNS hostnames (`postgres`, `rabbitmq`, `worker`) at runtime.
+
+**2. Start the platform**
+
+```powershell
+cd infrastructure
+docker compose up --build
+```
+
+**3. URLs after startup**
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8080 |
+| Health | http://localhost:8080/health |
+| RabbitMQ UI | http://localhost:15672 |
+| Worker | Consumes `scan_jobs` automatically |
+
+**4. Stop**
+
+```powershell
+cd infrastructure
+docker compose down
+```
+
+Data in named volumes is kept. Remove volumes too:
+
+```powershell
+docker compose down -v
+```
+
+### Persistent volumes
+
+| Volume | Purpose |
+|--------|---------|
+| `postgres_data` | PostgreSQL data |
+| `rabbitmq_data` | RabbitMQ durable queues / definitions |
+
+### Startup order & health
+
+`postgres` (healthy) → `rabbitmq` (healthy) → `backend-api` (healthy) → `worker` → `frontend`
+
+The worker reconnects automatically if RabbitMQ is temporarily unavailable.
+
+### `SCAN_MODE` compatibility
+
+| Mode | Docker notes |
+|------|----------------|
+| `rabbitmq` (recommended) | Default worker command: `python -m app.consumer` |
+| `http` | Set `SCAN_MODE=http` in `infrastructure/.env` and override worker command to `uvicorn app.main:app --host 0.0.0.0 --port 8001` |
+
+# Getting started (local without Docker)
 
 **Need:** Node.js, Go, PostgreSQL, Cloud-IAM Keycloak ([guide](docs/KEYCLOAK.md))
 
 ```powershell
+# One env for API, UI, and worker (only if infrastructure\.env is missing)
+# copy infrastructure\.env.example infrastructure\.env
+
 # API
 cd backend-api
-copy .env.example .env   # DATABASE_* + KEYCLOAK_*
 go mod tidy
 go run ./cmd/server      # http://localhost:8080/health
 
 # UI
 cd frontend
-copy .env.example .env   # VITE_API_URL + VITE_KEYCLOAK_*
 npm install
 npm run dev              # http://localhost:5173 → Keycloak
 ```
@@ -246,7 +351,10 @@ More detail: [`backend-api/README.md`](backend-api/README.md) · [`frontend/READ
 | 3 | Keycloak OIDC + JWT RBAC | **Done** |
 | 4 | Python scanner worker | **Done** |
 | 5 | RabbitMQ + dual scan transport | **Done** |
-| 6–9 | Redis · ES · Docker · CI/CD | Planned |
+| 8 | Docker Compose | **Done** |
+| 9 | Demo / UI polish | Planned |
+| 10 | GitHub Actions (CI/CD) | Planned |
+| 6–7 | Redis · Elasticsearch | Later |
 
 Full checklist: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
 

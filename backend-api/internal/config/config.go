@@ -71,7 +71,7 @@ func Load() (*Config, error) {
 	missing := missingRequired(cfg)
 	if len(missing) > 0 {
 		return nil, fmt.Errorf(
-			"missing required environment variables: %s (copy .env.example to .env and fill values)",
+			"missing required environment variables: %s (copy infrastructure/.env.example to infrastructure/.env)",
 			strings.Join(missing, ", "),
 		)
 	}
@@ -102,8 +102,10 @@ func (c *Config) DSN() string {
 }
 
 func loadDotEnv() {
+	// Single shared env: infrastructure/.env (also try CWD for Docker / overrides)
+	_ = godotenv.Load("infrastructure/.env")
+	_ = godotenv.Load("../infrastructure/.env")
 	_ = godotenv.Load(".env")
-	_ = godotenv.Load("backend-api/.env")
 }
 
 func getEnv(key, fallback string) string {

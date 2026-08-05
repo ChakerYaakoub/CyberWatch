@@ -5,7 +5,6 @@ import {
   DrawerBody,
   DrawerContent,
   DrawerOverlay,
-  Flex,
   Text,
   VStack,
 } from '@chakra-ui/react'
