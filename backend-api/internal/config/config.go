@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -31,27 +32,40 @@ type Config struct {
 	ScanMode    string
 	WorkerURL   string
 	RabbitMQURL string
+
+	RabbitExchange       string
+	RabbitQueue          string
+	RabbitDeadLetterEx   string
+	RabbitDeadLetterQueue string
+	RabbitRoutingKey     string
+	RabbitMaxAttempts    int
 }
 
 func Load() (*Config, error) {
 	loadDotEnv()
 
 	cfg := &Config{
-		AppPort:          getEnv("APP_PORT", "8080"),
-		AppEnv:           getEnv("APP_ENV", "development"),
-		CORSOrigin:       getEnv("CORS_ORIGIN", "http://localhost:5173"),
-		DBHost:           mustGetEnv("DATABASE_HOST"),
-		DBPort:           mustGetEnv("DATABASE_PORT"),
-		DBUser:           mustGetEnv("DATABASE_USER"),
-		DBPassword:       mustGetEnv("DATABASE_PASSWORD"),
-		DBName:           mustGetEnv("DATABASE_NAME"),
-		DBSSLMode:        getEnv("DATABASE_SSLMODE", "disable"),
-		KeycloakURL:      mustGetEnv("KEYCLOAK_URL"),
-		KeycloakRealm:    mustGetEnv("KEYCLOAK_REALM"),
-		KeycloakClientID: mustGetEnv("KEYCLOAK_CLIENT_ID"),
-		ScanMode:         strings.ToLower(getEnv("SCAN_MODE", ScanModeHTTP)),
-		WorkerURL:        strings.TrimRight(getEnv("WORKER_URL", "http://localhost:8001"), "/"),
-		RabbitMQURL:      getEnv("RABBITMQ_URL", ""),
+		AppPort:               getEnv("APP_PORT", "8080"),
+		AppEnv:                getEnv("APP_ENV", "development"),
+		CORSOrigin:            mustGetEnv("CORS_ORIGIN"),
+		DBHost:                mustGetEnv("DATABASE_HOST"),
+		DBPort:                mustGetEnv("DATABASE_PORT"),
+		DBUser:                mustGetEnv("DATABASE_USER"),
+		DBPassword:            mustGetEnv("DATABASE_PASSWORD"),
+		DBName:                mustGetEnv("DATABASE_NAME"),
+		DBSSLMode:             getEnv("DATABASE_SSLMODE", "disable"),
+		KeycloakURL:           mustGetEnv("KEYCLOAK_URL"),
+		KeycloakRealm:         mustGetEnv("KEYCLOAK_REALM"),
+		KeycloakClientID:      mustGetEnv("KEYCLOAK_CLIENT_ID"),
+		ScanMode:              strings.ToLower(getEnv("SCAN_MODE", ScanModeHTTP)),
+		WorkerURL:             strings.TrimRight(getEnv("WORKER_URL", ""), "/"),
+		RabbitMQURL:           getEnv("RABBITMQ_URL", ""),
+		RabbitExchange:        getEnv("RABBITMQ_EXCHANGE", "cyberwatch.scans"),
+		RabbitQueue:           getEnv("RABBITMQ_QUEUE", "scan_jobs"),
+		RabbitDeadLetterEx:    getEnv("RABBITMQ_DEAD_LETTER_EXCHANGE", "cyberwatch.scans.dlx"),
+		RabbitDeadLetterQueue: getEnv("RABBITMQ_DEAD_LETTER_QUEUE", "scan_dead_letter"),
+		RabbitRoutingKey:      getEnv("RABBITMQ_ROUTING_KEY", "scan.start"),
+		RabbitMaxAttempts:     getEnvInt("RABBITMQ_MAX_ATTEMPTS", 3),
 	}
 
 	missing := missingRequired(cfg)
@@ -99,6 +113,18 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+func getEnvInt(key string, fallback int) int {
+	raw := getEnv(key, "")
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return fallback
+	}
+	return n
+}
+
 func mustGetEnv(key string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return strings.TrimSpace(value)
@@ -108,6 +134,7 @@ func mustGetEnv(key string) string {
 
 func missingRequired(cfg *Config) []string {
 	required := map[string]string{
+		"CORS_ORIGIN":        cfg.CORSOrigin,
 		"DATABASE_HOST":      cfg.DBHost,
 		"DATABASE_PORT":      cfg.DBPort,
 		"DATABASE_USER":      cfg.DBUser,

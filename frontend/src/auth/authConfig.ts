@@ -3,7 +3,9 @@ const realm = import.meta.env.VITE_KEYCLOAK_REALM
 const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID
 
 if (!keycloakUrl || !realm || !clientId) {
-  console.error('Missing Keycloak env vars. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID')
+  throw new Error(
+    'Missing Keycloak env. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID in frontend/.env',
+  )
 }
 
 export const authConfig = {

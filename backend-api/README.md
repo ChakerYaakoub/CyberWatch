@@ -102,9 +102,15 @@ DATABASE_SSLMODE=disable
 KEYCLOAK_URL=https://<host>.cloud-iam.com/auth
 KEYCLOAK_REALM=<your-realm>
 KEYCLOAK_CLIENT_ID=cyberwatch-api
+
+SCAN_MODE=http
+WORKER_URL=http://localhost:8001
 ```
 
+For deploy, set `CORS_ORIGIN`, `WORKER_URL` / `RABBITMQ_URL`, and Keycloak/DB to your real hosts — nothing sensitive is hardcoded in the Go binary.
+
 Keycloak vars are **required** — the server will not start without them.  
+`CORS_ORIGIN` and (when `SCAN_MODE=http`) `WORKER_URL` are also required.  
 Full IdP setup: [`docs/KEYCLOAK.md`](../docs/KEYCLOAK.md).
 
 ### 3. Run

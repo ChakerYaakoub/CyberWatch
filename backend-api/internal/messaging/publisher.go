@@ -13,9 +13,20 @@ import (
 type RabbitPublisher struct {
 	conn *amqp.Connection
 	ch   *amqp.Channel
+	topo Topology
 }
 
-func NewRabbitPublisher(url string) (*RabbitPublisher, error) {
+func NewRabbitPublisher(url string, topo Topology) (*RabbitPublisher, error) {
+	if url == "" {
+		return nil, fmt.Errorf("RABBITMQ_URL is empty")
+	}
+	if topo.Exchange == "" || topo.Queue == "" || topo.RoutingKey == "" {
+		return nil, fmt.Errorf("rabbitmq topology is incomplete")
+	}
+	if topo.MaxAttempts < 1 {
+		topo.MaxAttempts = 3
+	}
+
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq dial: %w", err)
@@ -27,7 +38,7 @@ func NewRabbitPublisher(url string) (*RabbitPublisher, error) {
 		return nil, fmt.Errorf("rabbitmq channel: %w", err)
 	}
 
-	pub := &RabbitPublisher{conn: conn, ch: ch}
+	pub := &RabbitPublisher{conn: conn, ch: ch, topo: topo}
 	if err := pub.declareTopology(); err != nil {
 		_ = pub.Close()
 		return nil, err
@@ -36,28 +47,28 @@ func NewRabbitPublisher(url string) (*RabbitPublisher, error) {
 }
 
 func (p *RabbitPublisher) declareTopology() error {
-	if err := p.ch.ExchangeDeclare(ExchangeName, ExchangeType, true, false, false, false, nil); err != nil {
+	if err := p.ch.ExchangeDeclare(p.topo.Exchange, ExchangeType, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare exchange: %w", err)
 	}
-	if err := p.ch.ExchangeDeclare(DeadLetterExchange, ExchangeType, true, false, false, false, nil); err != nil {
+	if err := p.ch.ExchangeDeclare(p.topo.DeadLetterExchange, ExchangeType, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare dlx: %w", err)
 	}
 
-	if _, err := p.ch.QueueDeclare(DeadLetterQueueName, true, false, false, false, nil); err != nil {
+	if _, err := p.ch.QueueDeclare(p.topo.DeadLetterQueue, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare dead letter queue: %w", err)
 	}
-	if err := p.ch.QueueBind(DeadLetterQueueName, "#", DeadLetterExchange, false, nil); err != nil {
+	if err := p.ch.QueueBind(p.topo.DeadLetterQueue, "#", p.topo.DeadLetterExchange, false, nil); err != nil {
 		return fmt.Errorf("bind dead letter queue: %w", err)
 	}
 
 	args := amqp.Table{
-		"x-dead-letter-exchange": DeadLetterExchange,
+		"x-dead-letter-exchange": p.topo.DeadLetterExchange,
 	}
-	if _, err := p.ch.QueueDeclare(QueueName, true, false, false, false, args); err != nil {
-		return fmt.Errorf("declare scan_jobs: %w", err)
+	if _, err := p.ch.QueueDeclare(p.topo.Queue, true, false, false, false, args); err != nil {
+		return fmt.Errorf("declare scan queue: %w", err)
 	}
-	if err := p.ch.QueueBind(QueueName, RoutingKeyStart, ExchangeName, false, nil); err != nil {
-		return fmt.Errorf("bind scan_jobs: %w", err)
+	if err := p.ch.QueueBind(p.topo.Queue, p.topo.RoutingKey, p.topo.Exchange, false, nil); err != nil {
+		return fmt.Errorf("bind scan queue: %w", err)
 	}
 	return nil
 }
@@ -76,8 +87,8 @@ func (p *RabbitPublisher) Publish(job ScanJob) error {
 	}
 
 	err = p.ch.Publish(
-		ExchangeName,
-		RoutingKeyStart,
+		p.topo.Exchange,
+		p.topo.RoutingKey,
 		false,
 		false,
 		amqp.Publishing{

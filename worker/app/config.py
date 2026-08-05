@@ -1,9 +1,12 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Deploy-sensitive values come from environment / .env — no secret defaults."""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "CyberWatch Scanner Worker"
@@ -17,16 +20,16 @@ class Settings(BaseSettings):
     port_timeout_seconds: float = 2.0
     user_agent: str = "CyberWatch-Scanner/1.0 (+passive-external-scan)"
 
-    # Shared PostgreSQL (same DB as Go API) — required to persist job results
-    database_host: str = "localhost"
-    database_port: int = 5432
-    database_user: str = "postgres"
-    database_password: str = ""
-    database_name: str = "cyberwatch"
+    # Required — same PostgreSQL as Go API (set in .env)
+    database_host: str
+    database_port: int
+    database_user: str
+    database_password: str
+    database_name: str
     database_sslmode: str = "disable"
 
-    # RabbitMQ consumer
-    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
+    # RabbitMQ — URL required when running the consumer (no guest/guest default)
+    rabbitmq_url: str = ""
     queue_name: str = "scan_jobs"
     exchange_name: str = "cyberwatch.scans"
     dead_letter_exchange: str = "cyberwatch.scans.dlx"
@@ -34,7 +37,21 @@ class Settings(BaseSettings):
     routing_key: str = "scan.start"
     max_attempts: int = 3
 
+    @field_validator("database_password")
+    @classmethod
+    def password_must_be_set(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("DATABASE_PASSWORD is required")
+        return value
+
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore[call-arg]
+
+
+def require_rabbitmq_url(settings: Settings) -> None:
+    if not settings.rabbitmq_url.strip():
+        raise RuntimeError(
+            "RABBITMQ_URL is required to run the consumer (set it in worker/.env)"
+        )

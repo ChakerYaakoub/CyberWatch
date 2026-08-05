@@ -3,15 +3,19 @@ package messaging
 import "time"
 
 const (
-	ScanJobVersion      = 1
-	ExchangeName        = "cyberwatch.scans"
-	ExchangeType        = "topic"
-	QueueName           = "scan_jobs"
-	DeadLetterQueueName = "scan_dead_letter"
-	RoutingKeyStart     = "scan.start"
-	DeadLetterExchange  = "cyberwatch.scans.dlx"
-	MaxAttempts         = 3
+	ScanJobVersion = 1
+	ExchangeType   = "topic"
 )
+
+// Topology is loaded from environment (deploy-specific names).
+type Topology struct {
+	Exchange          string
+	DeadLetterExchange string
+	Queue             string
+	DeadLetterQueue   string
+	RoutingKey        string
+	MaxAttempts       int
+}
 
 // ScanJob is the versionable message published for async scans.
 type ScanJob struct {

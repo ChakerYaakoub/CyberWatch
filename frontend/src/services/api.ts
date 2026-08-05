@@ -4,6 +4,12 @@ import { getAccessToken, loginRedirect } from '../auth/TokenManager'
 
 const apiBaseURL = import.meta.env.VITE_API_URL
 
+if (!apiBaseURL) {
+  throw new Error(
+    'Missing VITE_API_URL. Copy frontend/.env.example to frontend/.env and set the API base URL.',
+  )
+}
+
 export const api = axios.create({
   baseURL: apiBaseURL,
   headers: {

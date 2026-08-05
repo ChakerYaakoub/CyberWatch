@@ -9,7 +9,7 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic, BasicProperties
 
-from app.config import get_settings
+from app.config import get_settings, require_rabbitmq_url
 from app.models.job import ScanJob
 from app.services.job_processor import JobProcessor
 from app.utils.logging_config import configure_logging, get_logger
@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 class ScanConsumer:
     def __init__(self) -> None:
         self.settings = get_settings()
+        require_rabbitmq_url(self.settings)
         self.processor = JobProcessor(self.settings)
         self._connection: pika.BlockingConnection | None = None
         self._channel: BlockingChannel | None = None

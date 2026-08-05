@@ -91,7 +91,14 @@ func newScanPublisher(cfg *config.Config) (messaging.ScanPublisher, error) {
 	switch cfg.ScanMode {
 	case config.ScanModeRabbitMQ:
 		log.Printf("scan transport: rabbitmq")
-		return messaging.NewRabbitPublisher(cfg.RabbitMQURL)
+		return messaging.NewRabbitPublisher(cfg.RabbitMQURL, messaging.Topology{
+			Exchange:           cfg.RabbitExchange,
+			DeadLetterExchange: cfg.RabbitDeadLetterEx,
+			Queue:              cfg.RabbitQueue,
+			DeadLetterQueue:    cfg.RabbitDeadLetterQueue,
+			RoutingKey:         cfg.RabbitRoutingKey,
+			MaxAttempts:        cfg.RabbitMaxAttempts,
+		})
 	default:
 		log.Printf("scan transport: http worker=%s", cfg.WorkerURL)
 		return messaging.NewHTTPPublisher(cfg.WorkerURL), nil
