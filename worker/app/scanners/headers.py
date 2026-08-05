@@ -42,6 +42,7 @@ SECURITY_HEADERS: dict[str, tuple[Severity, str, str]] = {
 
 
 def scan_headers(response_headers: dict[str, str] | None) -> tuple[list[HeaderCheck], list[Finding]]:
+    """Check presence of SECURITY_HEADERS; missing ones become Findings."""
     headers_lower = {k.lower(): v for k, v in (response_headers or {}).items()}
     checks: list[HeaderCheck] = []
     findings: list[Finding] = []

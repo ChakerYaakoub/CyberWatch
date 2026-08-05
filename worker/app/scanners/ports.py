@@ -134,6 +134,7 @@ def scan_ports(
     host: str,
     settings: Settings,
 ) -> tuple[list[PortCheck], list[Finding]]:
+    """Probe COMMON_PORTS; only RISKY_PORTS with confirmed service become findings."""
     checks: list[PortCheck] = []
     findings: list[Finding] = []
 

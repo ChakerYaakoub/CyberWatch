@@ -1,3 +1,5 @@
+"""Domain string normalization and validation (hostname only, no URLs)."""
+
 import re
 
 _DOMAIN_RE = re.compile(
@@ -6,6 +8,7 @@ _DOMAIN_RE = re.compile(
 
 
 def normalize_domain(raw: str) -> str:
+    """Strip scheme/path and lowercase — e.g. https://Example.com/a → example.com."""
     value = raw.strip().lower()
     value = value.removeprefix("https://").removeprefix("http://")
     value = value.split("/")[0].split("?")[0].split("#")[0]
@@ -16,6 +19,7 @@ def normalize_domain(raw: str) -> str:
 
 
 def validate_domain(domain: str) -> str:
+    """Return normalized domain or raise ValueError."""
     normalized = normalize_domain(domain)
     if not normalized or normalized.replace(".", "").isdigit():
         raise ValueError("Invalid domain format")

@@ -1,3 +1,5 @@
+"""Passive scanner modules — imported by ScanService as a single pipeline."""
+
 from app.scanners.dns import scan_dns
 from app.scanners.headers import scan_headers
 from app.scanners.http import scan_http

@@ -1,4 +1,9 @@
-"""RabbitMQ consumer for scan_jobs — reuses JobProcessor / ScanService."""
+"""
+RabbitMQ consumer for scan_jobs (Compose default entrypoint).
+
+Reuses JobProcessor / ScanService — same path as POST /jobs.
+Run: python -m app.consumer
+"""
 
 from __future__ import annotations
 
@@ -18,6 +23,8 @@ logger = get_logger(__name__)
 
 
 class ScanConsumer:
+    """Long-running consumer: declare topology, process one message at a time, reconnect on failure."""
+
     def __init__(self) -> None:
         self.settings = get_settings()
         require_rabbitmq_url(self.settings)
@@ -32,10 +39,12 @@ class ScanConsumer:
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
         self._declare_topology(self._channel)
+        # One unacked job at a time — avoids overload and preserves order per consumer.
         self._channel.basic_qos(prefetch_count=1)
         logger.info("rabbitmq_connected", queue=self.settings.queue_name)
 
     def _declare_topology(self, channel: BlockingChannel) -> None:
+        """Idempotent declare — must match Go RabbitPublisher topology."""
         channel.exchange_declare(
             exchange=self.settings.exchange_name,
             exchange_type="topic",
@@ -64,6 +73,7 @@ class ScanConsumer:
         )
 
     def _publish_retry(self, channel: BlockingChannel, job: ScanJob) -> None:
+        """Requeue with attempt+1 (manual retry; message is acked then republished)."""
         job.attempt += 1
         channel.basic_publish(
             exchange=self.settings.exchange_name,

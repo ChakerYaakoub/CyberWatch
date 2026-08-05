@@ -58,6 +58,7 @@ def _to_result(
 
 
 def scan_http(domain: str, settings: Settings) -> tuple[HttpResult, requests.Response | None]:
+    """Try HTTPS first, then HTTP. Returns (summary, raw response) for header/tech reuse."""
     https_url = f"https://{domain}"
     response, elapsed_ms, error = _probe(https_url, settings)
     if response is not None and elapsed_ms is not None:

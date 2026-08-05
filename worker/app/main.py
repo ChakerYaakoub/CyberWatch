@@ -1,3 +1,10 @@
+"""
+CyberWatch scanner worker entry (HTTP / FastAPI mode).
+
+Run: uvicorn app.main:app --host 0.0.0.0 --port 8001
+Compose default uses app.consumer instead (RabbitMQ).
+"""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -24,7 +31,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
         version="1.0.0",
-        description="CyberWatch passive external security scanner (standalone; RabbitMQ later).",
+        description="CyberWatch passive external scanner (HTTP API + shared ScanService).",
         lifespan=lifespan,
     )
     application.add_middleware(

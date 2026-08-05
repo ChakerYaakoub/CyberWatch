@@ -33,6 +33,7 @@ def _resolve_a_system(domain: str, timeout: float) -> str | None:
 
 
 def scan_dns(domain: str, settings: Settings) -> DnsResult:
+    """Resolve A / CNAME / NS; fall back to OS resolver if dnspython times out."""
     resolver = dns.resolver.Resolver()
     resolver.lifetime = settings.dns_timeout_seconds
     resolver.timeout = settings.dns_timeout_seconds

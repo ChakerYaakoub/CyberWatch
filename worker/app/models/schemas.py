@@ -1,3 +1,5 @@
+"""Pydantic models for scan I/O (API responses and internal pipeline results)."""
+
 from enum import Enum
 
 from pydantic import BaseModel, Field

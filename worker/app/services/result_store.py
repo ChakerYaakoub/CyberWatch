@@ -1,4 +1,8 @@
-"""PostgreSQL persistence for scan results — used by HTTP /jobs and RabbitMQ consumer."""
+"""
+PostgreSQL persistence for scan results — used by HTTP /jobs and RabbitMQ consumer.
+
+Writes to the same `scans` / `vulnerabilities` tables as the Go API (Go creates the scan row).
+"""
 
 from __future__ import annotations
 
@@ -19,6 +23,8 @@ STATUS_FAILED = "FAILED"
 
 
 class ResultStore:
+    """Thin SQL helper (psycopg2) — no ORM, same schema as GORM models."""
+
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
@@ -34,6 +40,7 @@ class ResultStore:
         )
 
     def mark_running(self, scan_id: int) -> None:
+        """QUEUED → RUNNING when the worker picks up the job."""
         now = datetime.now(timezone.utc)
         with self._connect() as conn:
             with conn.cursor() as cur:
@@ -64,7 +71,9 @@ class ResultStore:
         logger.warning("scan_status_failed", scan_id=scan_id, reason=reason)
 
     def save_success(self, scan_id: int, result: ScanResult) -> None:
+        """Replace findings for this scan and mark COMPLETED with risk_score."""
         now = datetime.now(timezone.utc)
+        # Prefer non-INFO findings; fall back to all if only INFO exists.
         findings = [f for f in result.findings if f.severity.value != "INFO"] or result.findings
 
         with self._connect() as conn:

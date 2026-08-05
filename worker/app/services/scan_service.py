@@ -36,6 +36,7 @@ class ScanService:
         self.settings = settings or get_settings()
 
     def run(self, raw_domain: str) -> ScanResult:
+        """Pipeline: validate → DNS → (NXDOMAIN short-circuit) → HTTP → headers/tech/ports → risk."""
         try:
             domain = validate_domain(raw_domain)
         except ValueError as exc:

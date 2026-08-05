@@ -1,9 +1,12 @@
+"""Structured logging via structlog (JSON-friendly key=value in console)."""
+
 import logging
 
 import structlog
 
 
 def configure_logging(level: str = "INFO") -> None:
+    """Call once at process start (main lifespan or consumer __main__)."""
     logging.basicConfig(format="%(message)s", level=getattr(logging, level.upper(), logging.INFO))
     structlog.configure(
         processors=[

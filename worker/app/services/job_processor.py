@@ -1,4 +1,4 @@
-"""Transport-agnostic job execution around ScanService."""
+"""Transport-agnostic job execution: DB status updates around ScanService."""
 
 from __future__ import annotations
 
@@ -12,6 +12,11 @@ logger = get_logger(__name__)
 
 
 class JobProcessor:
+    """
+    Shared by RabbitMQ consumer and POST /jobs.
+    Flow: mark RUNNING → ScanService.run → save COMPLETED or FAILED.
+    """
+
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self.scanner = ScanService(settings=self.settings)

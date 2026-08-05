@@ -1,3 +1,5 @@
+"""HTTP routes for the worker FastAPI app (dev / SCAN_MODE=http)."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.config import Settings, get_settings
@@ -19,6 +21,7 @@ def get_job_processor(settings: Settings = Depends(get_settings)) -> JobProcesso
 
 @router.get("/health")
 def health() -> dict[str, str]:
+    """Liveness for local uvicorn (Compose consumer does not expose this by default)."""
     return {"status": "ok", "service": "cyberwatch-worker"}
 
 
@@ -55,7 +58,10 @@ def accept_job(
     job: ScanJob,
     processor: JobProcessor = Depends(get_job_processor),
 ) -> dict[str, str | int]:
-    """Development transport: Go API posts a ScanJob; work runs in a background thread."""
+    """
+    Development transport: Go HTTPPublisher POSTs a ScanJob here.
+    Work runs in a daemon thread so the API can return 202 immediately.
+    """
     import threading
 
     from app.utils.logging_config import get_logger

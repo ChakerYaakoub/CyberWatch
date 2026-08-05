@@ -38,6 +38,7 @@ def detect_technologies(
     response_headers: dict[str, str] | None,
     html: str | None,
 ) -> list[str]:
+    """Match HEADER_RULES / HTML_RULES — fingerprint only, not a vulnerability."""
     found: set[str] = set()
     headers_blob = " ".join(f"{k}:{v}" for k, v in (response_headers or {}).items())
 

@@ -1,3 +1,5 @@
+"""Worker settings from infrastructure/.env (same file as Go API / Compose)."""
+
 from functools import lru_cache
 
 from pydantic import field_validator
@@ -5,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Deploy-sensitive values come from environment / .env — no secret defaults."""
+    """Deploy-sensitive values come from environment — no secret defaults."""
 
     model_config = SettingsConfigDict(
         env_file=(
@@ -23,12 +25,13 @@ class Settings(BaseSettings):
     port: int = 8001
     log_level: str = "INFO"
 
+    # Scanner timeouts (passive — keep short)
     http_timeout_seconds: float = 8.0
     dns_timeout_seconds: float = 8.0
     port_timeout_seconds: float = 2.0
     user_agent: str = "CyberWatch-Scanner/1.0 (+passive-external-scan)"
 
-    # Required — same PostgreSQL as Go API (set in .env)
+    # Same PostgreSQL as Go API (worker UPDATEs scans / INSERTs vulnerabilities)
     database_host: str
     database_port: int
     database_user: str
@@ -36,7 +39,7 @@ class Settings(BaseSettings):
     database_name: str
     database_sslmode: str = "disable"
 
-    # RabbitMQ — URL required when running the consumer (no guest/guest default)
+    # Required only for python -m app.consumer
     rabbitmq_url: str = ""
     queue_name: str = "scan_jobs"
     exchange_name: str = "cyberwatch.scans"
@@ -55,6 +58,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Cached settings singleton for FastAPI Depends and services."""
     return Settings()  # type: ignore[call-arg]
 
 

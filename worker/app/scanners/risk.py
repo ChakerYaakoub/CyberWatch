@@ -52,6 +52,7 @@ def calculate_risk(
     *,
     dns_resolved: bool = True,
 ) -> tuple[int, RiskLevel, list[Finding]]:
+    """Score 0–100 (higher = safer). May append HTTPS-unavailable findings."""
     enriched = list(findings)
 
     # Non-existent / unresolved hosts are not a "medium" risk posture — they are broken.
