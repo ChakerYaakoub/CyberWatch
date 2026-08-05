@@ -113,9 +113,8 @@ Stack under `infrastructure/docker-compose.yml`:
 - **Secrets:** single `infrastructure/.env` (create once from `.env.example` only if `.env` does not exist yet)
 
 ```powershell
-cd infrastructure
-docker compose up --build
-docker compose down
+make start
+make stop
 ```
 
 See root [`README.md`](README.md) for URLs, volumes, and `SCAN_MODE` notes.

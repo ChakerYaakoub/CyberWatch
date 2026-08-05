@@ -271,11 +271,10 @@ Edit that file for DB, Keycloak, RabbitMQ, `VITE_*`, `SCAN_MODE`.
 
 Compose overrides Docker DNS hostnames (`postgres`, `rabbitmq`, `worker`) at runtime.
 
-**2. Start the platform**
+**2. Start the platform** (from repo root)
 
 ```powershell
-cd infrastructure
-docker compose up --build
+make start
 ```
 
 **3. URLs after startup**
@@ -288,11 +287,10 @@ docker compose up --build
 | RabbitMQ UI | http://localhost:15672 |
 | Worker | Consumes `scan_jobs` automatically |
 
-**4. Stop**
+**4. Stop** (from repo root)
 
 ```powershell
-cd infrastructure
-docker compose down
+make stop
 ```
 
 Data in named volumes is kept. Remove volumes too:
