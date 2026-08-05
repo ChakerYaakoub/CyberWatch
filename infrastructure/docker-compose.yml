@@ -1,30 +1,34 @@
 # CyberWatch — production-like local stack
-# Usage (from this directory):
-#   docker compose up --build
-#   docker compose down
+#
+# From repo root:  make start | make stop | make logs | make status
+# Or from here:    docker compose up --build
 #
 # Single env file: infrastructure/.env (copy from .env.example)
+# NOT included: Keycloak (Cloud-IAM), Redis, Elasticsearch
 
 name: cyberwatch
 
+# YAML anchor — every app service loads the same .env, then may override hosts below.
 x-env-file: &env-file
   env_file:
     - .env
 
 services:
+  # --- Data layer ---
   postgres:
     image: postgres:16-alpine
     container_name: cyberwatch-postgres
     restart: unless-stopped
     <<: *env-file
     environment:
+      # Official image expects POSTGRES_* (mapped from our DATABASE_* names).
       POSTGRES_USER: ${DATABASE_USER:?Set DATABASE_USER in infrastructure/.env}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in infrastructure/.env}
       POSTGRES_DB: ${DATABASE_NAME:?Set DATABASE_NAME in infrastructure/.env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5432:5432" # host tools / local Go without Compose
     networks:
       - cyberwatch-network
     healthcheck:
@@ -35,7 +39,7 @@ services:
       start_period: 10s
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management # :15672 management UI
     container_name: cyberwatch-rabbitmq
     restart: unless-stopped
     <<: *env-file
@@ -45,8 +49,8 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"   # AMQP
+      - "15672:15672" # management UI
     networks:
       - cyberwatch-network
     healthcheck:
@@ -60,6 +64,7 @@ services:
       postgres:
         condition: service_healthy
 
+  # --- Application layer ---
   backend-api:
     build:
       context: ../backend-api
@@ -68,6 +73,7 @@ services:
     restart: unless-stopped
     <<: *env-file
     environment:
+      # Docker DNS names (override localhost from .env meant for host processes).
       DATABASE_HOST: postgres
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       WORKER_URL: http://worker:8001
@@ -82,11 +88,12 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
+      # Public /health — no JWT. Also used by worker/frontend depends_on.
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 10s
       timeout: 3s
       retries: 15
-      start_period: 45s
+      start_period: 45s # AutoMigrate + JWKS fetch on first boot
 
   worker:
     build:
@@ -98,10 +105,11 @@ services:
     environment:
       DATABASE_HOST: postgres
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
-    # Default: RabbitMQ consumer. For SCAN_MODE=http / API debug:
+    # Default CMD in Dockerfile: python -m app.consumer
+    # For SCAN_MODE=http / API debug, uncomment:
     #   command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
     ports:
-      - "8001:8001"
+      - "8001:8001" # useful when uvicorn override is enabled
     networks:
       - cyberwatch-network
     depends_on:
@@ -110,13 +118,14 @@ services:
       rabbitmq:
         condition: service_healthy
       backend-api:
-        condition: service_healthy
+        condition: service_healthy # wait for AutoMigrate before writing findings
 
   frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
       args:
+        # Vite bakes these into the JS bundle at build time — rebuild after changes.
         VITE_API_URL: ${VITE_API_URL}
         VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL}
         VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM}
@@ -133,7 +142,7 @@ services:
         condition: service_healthy
 
 volumes:
-  postgres_data:
+  postgres_data:  # survives compose down (use down -v to wipe)
   rabbitmq_data:
 
 networks:

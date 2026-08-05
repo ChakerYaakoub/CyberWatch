@@ -1,3 +1,4 @@
+# Keep build context small and avoid baking secrets into layers.
 .git
 .env
 *.md
