@@ -8,6 +8,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	ScanModeHTTP     = "http"
+	ScanModeRabbitMQ = "rabbitmq"
+)
+
 type Config struct {
 	AppPort    string
 	AppEnv     string
@@ -22,6 +27,10 @@ type Config struct {
 	KeycloakURL      string
 	KeycloakRealm    string
 	KeycloakClientID string
+
+	ScanMode    string
+	WorkerURL   string
+	RabbitMQURL string
 }
 
 func Load() (*Config, error) {
@@ -40,6 +49,9 @@ func Load() (*Config, error) {
 		KeycloakURL:      mustGetEnv("KEYCLOAK_URL"),
 		KeycloakRealm:    mustGetEnv("KEYCLOAK_REALM"),
 		KeycloakClientID: mustGetEnv("KEYCLOAK_CLIENT_ID"),
+		ScanMode:         strings.ToLower(getEnv("SCAN_MODE", ScanModeHTTP)),
+		WorkerURL:        strings.TrimRight(getEnv("WORKER_URL", "http://localhost:8001"), "/"),
+		RabbitMQURL:      getEnv("RABBITMQ_URL", ""),
 	}
 
 	missing := missingRequired(cfg)
@@ -48,6 +60,16 @@ func Load() (*Config, error) {
 			"missing required environment variables: %s (copy .env.example to .env and fill values)",
 			strings.Join(missing, ", "),
 		)
+	}
+
+	if cfg.ScanMode != ScanModeHTTP && cfg.ScanMode != ScanModeRabbitMQ {
+		return nil, fmt.Errorf("SCAN_MODE must be %q or %q", ScanModeHTTP, ScanModeRabbitMQ)
+	}
+	if cfg.ScanMode == ScanModeHTTP && cfg.WorkerURL == "" {
+		return nil, fmt.Errorf("WORKER_URL is required when SCAN_MODE=http")
+	}
+	if cfg.ScanMode == ScanModeRabbitMQ && cfg.RabbitMQURL == "" {
+		return nil, fmt.Errorf("RABBITMQ_URL is required when SCAN_MODE=rabbitmq")
 	}
 
 	return cfg, nil

@@ -45,6 +45,10 @@ func (r *ScanRepository) FindByID(id uint) (*models.Scan, error) {
 	return &scan, nil
 }
 
+func (r *ScanRepository) UpdateStatus(id uint, status models.ScanStatus) error {
+	return r.db.Model(&models.Scan{}).Where("id = ?", id).Update("status", status).Error
+}
+
 func (r *ScanRepository) CountByStatuses(statuses []models.ScanStatus) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.Scan{}).Where("status IN ?", statuses).Count(&count).Error

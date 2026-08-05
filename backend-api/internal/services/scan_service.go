@@ -2,7 +2,10 @@ package services
 
 import (
 	"errors"
+	"log"
+	"time"
 
+	"github.com/cyberwatch/backend-api/internal/messaging"
 	"github.com/cyberwatch/backend-api/internal/models"
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
@@ -10,21 +13,36 @@ import (
 type ScanService struct {
 	scans     *repositories.ScanRepository
 	companies *repositories.CompanyRepository
+	publisher messaging.ScanPublisher
 }
 
-func NewScanService(scans *repositories.ScanRepository, companies *repositories.CompanyRepository) *ScanService {
+func NewScanService(
+	scans *repositories.ScanRepository,
+	companies *repositories.CompanyRepository,
+	publisher messaging.ScanPublisher,
+) *ScanService {
+	if publisher == nil {
+		publisher = messaging.NoopPublisher{}
+	}
 	return &ScanService{
 		scans:     scans,
 		companies: companies,
+		publisher: publisher,
 	}
 }
 
-func (s *ScanService) Create(input CreateScanInput) (*models.Scan, error) {
+type CreateScanCommand struct {
+	CompanyID   uint
+	RequestedBy string
+}
+
+func (s *ScanService) Create(input CreateScanCommand) (*models.Scan, error) {
 	if input.CompanyID == 0 {
 		return nil, ErrInvalidInput
 	}
 
-	if _, err := s.companies.FindByID(input.CompanyID); err != nil {
+	company, err := s.companies.FindByID(input.CompanyID)
+	if err != nil {
 		if errors.Is(err, repositories.ErrNotFound) {
 			return nil, ErrCompanyMissing
 		}
@@ -40,6 +58,32 @@ func (s *ScanService) Create(input CreateScanInput) (*models.Scan, error) {
 		return nil, err
 	}
 
+	requestedBy := input.RequestedBy
+	if requestedBy == "" {
+		requestedBy = "system"
+	}
+
+	job := messaging.ScanJob{
+		Version:     messaging.ScanJobVersion,
+		ScanID:      scan.ID,
+		CompanyID:   company.ID,
+		Domain:      company.Domain,
+		RequestedBy: requestedBy,
+		CreatedAt:   time.Now().UTC(),
+		Attempt:     1,
+	}
+
+	if err := s.publisher.Publish(job); err != nil {
+		log.Printf("scan job publish failed scanId=%d: %v", scan.ID, err)
+		_ = s.scans.UpdateStatus(scan.ID, models.ScanStatusFailed)
+		return nil, err
+	}
+
+	if err := s.scans.UpdateStatus(scan.ID, models.ScanStatusQueued); err != nil {
+		return nil, err
+	}
+
+	log.Printf("scan job accepted scanId=%d domain=%s mode=async", scan.ID, company.Domain)
 	return s.scans.FindByID(scan.ID)
 }
 

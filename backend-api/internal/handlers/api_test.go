@@ -10,6 +10,7 @@ import (
 
 	"github.com/cyberwatch/backend-api/internal/auth"
 	"github.com/cyberwatch/backend-api/internal/handlers"
+	"github.com/cyberwatch/backend-api/internal/messaging"
 	"github.com/cyberwatch/backend-api/internal/middleware"
 	"github.com/cyberwatch/backend-api/internal/models"
 	"github.com/cyberwatch/backend-api/internal/repositories"
@@ -39,7 +40,7 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 
 	return routes.Setup("http://localhost:5173", routes.Handlers{
 		Companies: handlers.NewCompanyHandler(services.NewCompanyService(companyRepo)),
-		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo)),
+		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo, messaging.NoopPublisher{})),
 		Dashboard: handlers.NewDashboardHandler(services.NewDashboardService(companyRepo, scanRepo, vulnRepo)),
 	}, routes.AuthHooks{
 		Authenticate: middleware.TestAuth(auth.User{
@@ -111,12 +112,12 @@ func TestCreateScan(t *testing.T) {
 	scanRes := httptest.NewRecorder()
 	router.ServeHTTP(scanRes, scanReq)
 
-	require.Equal(t, http.StatusCreated, scanRes.Code)
+	require.Equal(t, http.StatusAccepted, scanRes.Code)
 
 	var scan models.Scan
 	decodeData(t, scanRes.Body, &scan)
 	require.Equal(t, company.ID, scan.CompanyID)
-	require.Equal(t, models.ScanStatusPending, scan.Status)
+	require.Equal(t, models.ScanStatusQueued, scan.Status)
 }
 
 func TestDashboardEndpoint(t *testing.T) {
@@ -183,7 +184,7 @@ func TestDeleteCompany(t *testing.T) {
 	scanReq.Header.Set("Content-Type", "application/json")
 	scanRes := httptest.NewRecorder()
 	router.ServeHTTP(scanRes, scanReq)
-	require.Equal(t, http.StatusCreated, scanRes.Code)
+	require.Equal(t, http.StatusAccepted, scanRes.Code)
 
 	deleteReq := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/companies/%d", company.ID), nil)
 	deleteRes := httptest.NewRecorder()

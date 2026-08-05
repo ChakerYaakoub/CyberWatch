@@ -1,45 +1,44 @@
 # CyberWatch Scanner Worker
 
-Passive external security scanner for CyberWatch (Phase 4).
+Passive external security scanner for CyberWatch.
 
-Standalone **FastAPI** service — no RabbitMQ yet. The Go API can call `POST /scan` directly during development; a queue consumer can reuse `ScanService` later with minimal changes.
+**Phase 4:** scanning engine (`ScanService`)  
+**Phase 5:** dual transport — HTTP `/jobs` (dev) + RabbitMQ consumer (async)
 
 ## Stack
 
-- Python 3.12+
-- FastAPI · Uvicorn · Pydantic
-- Requests · BeautifulSoup4 · dnspython
-- Structlog
+- Python 3.12+ · FastAPI · Uvicorn · Pydantic
+- Requests · BeautifulSoup4 · dnspython · Structlog
+- Pika · psycopg2 (persist results to the same PostgreSQL as the Go API)
 
 ## Structure
 
 ```text
 worker/
 ├── app/
-│   ├── main.py              # FastAPI entrypoint
-│   ├── config.py            # Settings from env
-│   ├── api/routes.py        # HTTP transport (POST /scan)
-│   ├── scanners/            # Isolated passive checks
-│   │   ├── dns.py
-│   │   ├── http.py
-│   │   ├── headers.py
-│   │   ├── technology.py
-│   │   ├── ports.py
-│   │   └── risk.py
-│   ├── models/schemas.py    # Request / response models
-│   ├── services/            # ScanService orchestration
-│   └── utils/               # Domain validation + logging
+│   ├── main.py                 # FastAPI (HTTP)
+│   ├── consumer.py             # RabbitMQ consumer
+│   ├── config.py
+│   ├── api/routes.py           # POST /scan · POST /jobs
+│   ├── scanners/               # DNS · HTTP · headers · tech · ports · risk
+│   ├── models/
+│   ├── services/
+│   │   ├── scan_service.py     # Core pipeline (unchanged by transport)
+│   │   ├── job_processor.py    # Job → ScanService → DB
+│   │   └── result_store.py     # PostgreSQL updates
+│   └── utils/
 ├── requirements.txt
 └── README.md
 ```
 
-Business logic lives in `ScanService` + scanners. Transport is only in `api/routes.py`.
+## Modes
 
-## Pipeline
+| Mode | How jobs arrive | How to run |
+|------|-----------------|------------|
+| **HTTP (dev)** | Go `SCAN_MODE=http` → `POST /jobs` | `uvicorn app.main:app --port 8001` |
+| **RabbitMQ** | Go `SCAN_MODE=rabbitmq` → `scan_jobs` | `python -m app.consumer` (+ optional uvicorn for `/scan`) |
 
-```text
-domain → validate → DNS → HTTP → headers → technologies → ports → risk → JSON
-```
+`ScanService` never depends on RabbitMQ or HTTP.
 
 ## Setup
 
@@ -48,63 +47,53 @@ cd worker
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+copy .env.example .env
+# Fill DATABASE_* (same as backend-api) and RABBITMQ_URL if using the consumer
 ```
 
-## Run
+## Run — development (HTTP)
 
 ```powershell
-cd worker
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 - Health: http://localhost:8001/health  
 - Docs: http://localhost:8001/docs  
+- Manual sync scan: `POST /scan` `{ "domain": "example.com" }`  
+- Async job from API: `POST /jobs` (ScanJob JSON) → writes to PostgreSQL
 
-## API
-
-### `POST /scan`
-
-```json
-{ "domain": "example.com" }
-```
-
-Example response fields:
-
-| Field | Meaning |
-|-------|---------|
-| `domain` | Normalized domain |
-| `ip` | Resolved A record |
-| `dns` | Resolution details |
-| `http` | Reachability / status / timing |
-| `technologies` | Rule-based detections |
-| `headers` | Security header present / missing / value |
-| `ports` | Common TCP ports (80, 443, 22, 21, 3306, 5432, 6379, 5672) |
-| `riskScore` | 0–100 |
-| `riskLevel` | `LOW` · `MEDIUM` · `HIGH` · `CRITICAL` |
-| `findings` | title, description, severity, recommendation |
+## Run — RabbitMQ consumer
 
 ```powershell
-curl -X POST http://localhost:8001/scan -H "Content-Type: application/json" -d "{\"domain\":\"example.com\"}"
+# RabbitMQ must be running (e.g. docker run -p 5672:5672 rabbitmq:3-management)
+python -m app.consumer
 ```
 
-## Config (optional `.env`)
+Topology (declared automatically):
 
-```env
-APP_ENV=development
-LOG_LEVEL=INFO
-HOST=0.0.0.0
-PORT=8001
-HTTP_TIMEOUT_SECONDS=8
-DNS_TIMEOUT_SECONDS=5
-PORT_TIMEOUT_SECONDS=1.5
+| Resource | Name |
+|----------|------|
+| Exchange | `cyberwatch.scans` (topic, durable) |
+| Queue | `scan_jobs` (durable, DLX) |
+| Routing key | `scan.start` |
+| Dead letter | `scan_dead_letter` |
+
+Retries: up to **3** attempts, then dead-letter. Messages are persistent; consumer reconnects on connection loss.
+
+## Pipeline
+
+```text
+ScanJob → RUNNING → ScanService → findings → COMPLETED | FAILED
 ```
 
-## Safety
+Status lifecycle: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 
-- Passive checks only (no aggressive DNS enum / mass scanning)
-- Short socket timeouts on a fixed common-port list
-- Invalid domains return `400`
+## PowerShell examples
 
-## Next phase
+```powershell
+# Sync debug scan
+Invoke-RestMethod -Method Post -Uri http://localhost:8001/scan -ContentType "application/json" -Body '{"domain":"example.com"}'
 
-RabbitMQ will publish/consume scan jobs. Call `ScanService.run(domain)` from the consumer — no scanner changes required.
+# Job payload (same shape as Go publisher)
+Invoke-RestMethod -Method Post -Uri http://localhost:8001/jobs -ContentType "application/json" -Body '{"scanId":1,"companyId":1,"domain":"example.com","requestedBy":"admin","attempt":1}'
+```

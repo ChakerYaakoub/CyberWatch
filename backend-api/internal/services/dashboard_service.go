@@ -33,6 +33,7 @@ func (s *DashboardService) GetStats() (*DashboardStats, error) {
 
 	activeScans, err := s.scans.CountByStatuses([]models.ScanStatus{
 		models.ScanStatusPending,
+		models.ScanStatusQueued,
 		models.ScanStatusRunning,
 	})
 	if err != nil {

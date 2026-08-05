@@ -11,7 +11,7 @@ import type {
 const severityOrder: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 
 export function riskLevelFromScore(score: number | null, status: Scan['status']): RiskLevel {
-  if (score === null || status === 'PENDING' || status === 'RUNNING' || status === 'FAILED') {
+  if (score === null || status === 'PENDING' || status === 'QUEUED' || status === 'RUNNING' || status === 'FAILED') {
     return 'INFO'
   }
   if (score < 40) return 'CRITICAL'

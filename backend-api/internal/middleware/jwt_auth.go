@@ -180,3 +180,12 @@ func TestAuth(user auth.User) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func UserFromContext(c *gin.Context) (auth.User, bool) {
+	raw, ok := c.Get(auth.ContextUserKey)
+	if !ok {
+		return auth.User{}, false
+	}
+	user, ok := raw.(auth.User)
+	return user, ok
+}

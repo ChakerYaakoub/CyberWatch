@@ -6,6 +6,7 @@ type ScanStatus string
 
 const (
 	ScanStatusPending   ScanStatus = "PENDING"
+	ScanStatusQueued    ScanStatus = "QUEUED"
 	ScanStatusRunning   ScanStatus = "RUNNING"
 	ScanStatusCompleted ScanStatus = "COMPLETED"
 	ScanStatusFailed    ScanStatus = "FAILED"
@@ -14,6 +15,7 @@ const (
 type Severity string
 
 const (
+	SeverityInfo     Severity = "INFO"
 	SeverityLow      Severity = "LOW"
 	SeverityMedium   Severity = "MEDIUM"
 	SeverityHigh     Severity = "HIGH"

@@ -9,6 +9,8 @@ logger = get_logger(__name__)
 
 # Explicit penalties aligned with CyberWatch Phase 4 spec
 FINDING_PENALTIES: dict[str, int] = {
+    "Domain does not exist": 100,
+    "DNS resolution failed": 50,
     "HTTPS unavailable": 30,
     "Host unreachable over HTTP/HTTPS": 30,
     "Missing Strict-Transport-Security": 10,
@@ -47,18 +49,28 @@ def _level_from_score(score: int) -> RiskLevel:
 def calculate_risk(
     http: HttpResult,
     findings: list[Finding],
+    *,
+    dns_resolved: bool = True,
 ) -> tuple[int, RiskLevel, list[Finding]]:
     enriched = list(findings)
 
+    # Non-existent / unresolved hosts are not a "medium" risk posture — they are broken.
+    if any(f.title == "Domain does not exist" for f in enriched):
+        score = 0
+        level = RiskLevel.CRITICAL
+        logger.info("risk_calculated", risk_score=score, risk_level=level.value, findings=len(enriched))
+        return score, level, enriched
+
     if not http.reachable:
-        enriched.append(
-            Finding(
-                title="Host unreachable over HTTP/HTTPS",
-                description="Neither HTTPS nor HTTP responded successfully.",
-                severity=Severity.HIGH,
-                recommendation="Verify DNS, firewall rules, and that the web service is online.",
+        if not any(f.title.startswith("DNS") or f.title == "Domain does not exist" for f in enriched):
+            enriched.append(
+                Finding(
+                    title="Host unreachable over HTTP/HTTPS",
+                    description="Neither HTTPS nor HTTP responded successfully.",
+                    severity=Severity.HIGH,
+                    recommendation="Verify DNS, firewall rules, and that the web service is online.",
+                )
             )
-        )
     elif http.protocol == "http":
         enriched.append(
             Finding(
@@ -79,6 +91,10 @@ def calculate_risk(
         if penalty is None:
             penalty = FALLBACK_PENALTY.get(finding.severity, 5)
         score -= penalty
+
+    # Unresolved DNS without NXDOMAIN still cannot have a healthy score
+    if not dns_resolved:
+        score = min(score, 20)
 
     score = max(0, min(100, score))
     level = _level_from_score(score)

@@ -66,7 +66,7 @@ erDiagram
     }
 ```
 
-**Scan status:** `PENDING` · `RUNNING` · `COMPLETED` · `FAILED`  
+**Scan status:** `PENDING` · `QUEUED` · `RUNNING` · `COMPLETED` · `FAILED`  
 **Severity:** `LOW` · `MEDIUM` · `HIGH` · `CRITICAL`
 
 ## Setup
@@ -147,7 +147,7 @@ Public: `GET /health`
 | GET | `/api/dashboard` | ADMIN, ANALYST | Dashboard stats |
 | GET / POST | `/api/companies` | GET: any · POST: ADMIN | List / create |
 | GET / PUT / DELETE | `/api/companies/:id` | GET: any · write: ADMIN | Company CRUD |
-| GET / POST | `/api/scans` | GET: any · POST: ADMIN, ANALYST | List / create (`PENDING`) |
+| GET / POST | `/api/scans` | GET: any · POST: ADMIN, ANALYST | List / create scan (**202**, async) |
 | GET | `/api/scans/:id` | ADMIN, ANALYST | Scan + vulnerabilities |
 
 ```json

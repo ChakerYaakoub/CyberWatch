@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from app.config import Settings, get_settings
-from app.models.schemas import Finding, ScanResult, Severity
+from app.models.schemas import Finding, HttpResult, ScanResult, Severity
 from app.scanners import (
     calculate_risk,
     detect_technologies,
@@ -20,6 +20,13 @@ logger = get_logger(__name__)
 
 class DomainValidationError(ValueError):
     """Raised when the requested domain is invalid."""
+
+
+def _is_nxdomain(dns_error: str | None) -> bool:
+    if not dns_error:
+        return False
+    upper = dns_error.upper()
+    return "NXDOMAIN" in upper or "DOES NOT EXIST" in upper
 
 
 class ScanService:
@@ -39,11 +46,51 @@ class ScanService:
         dns = scan_dns(domain, self.settings)
         findings: list[Finding] = []
 
+        # Dead domain: do not invent a "medium" posture from missing headers / ports
+        if not dns.resolved and _is_nxdomain(dns.error):
+            findings.append(
+                Finding(
+                    title="Domain does not exist",
+                    description=(
+                        f"Public DNS returned NXDOMAIN for {domain}. "
+                        "The name is not registered or not delegated — there is no attack surface to score."
+                    ),
+                    severity=Severity.CRITICAL,
+                    recommendation="Check the domain spelling or register/configure DNS before scanning.",
+                )
+            )
+            http = HttpResult(reachable=False, error=dns.error)
+            risk_score, risk_level, all_findings = calculate_risk(
+                http,
+                findings,
+                dns_resolved=False,
+            )
+            result = ScanResult(
+                domain=domain,
+                ip=None,
+                dns=dns,
+                http=http,
+                technologies=[],
+                headers=[],
+                ports=[],
+                riskScore=risk_score,
+                riskLevel=risk_level,
+                findings=all_findings,
+            )
+            logger.info(
+                "scan_completed",
+                domain=domain,
+                risk_score=risk_score,
+                risk_level=risk_level.value,
+                findings=len(all_findings),
+                reason="nxdomain",
+            )
+            return result
+
         http, response = scan_http(domain, self.settings)
         response_headers = dict(response.headers) if response is not None else None
         html = response.text if response is not None else None
 
-        # Only raise DNS as a finding when the host is also unreachable over HTTP(S)
         if not dns.resolved and not http.reachable:
             findings.append(
                 Finding(
@@ -58,12 +105,21 @@ class ScanService:
         if http.reachable and response_headers is not None:
             header_checks, header_findings = scan_headers(response_headers)
             findings.extend(header_findings)
+
         technologies = detect_technologies(response_headers, html) if http.reachable else []
 
-        port_host = dns.ip or domain
-        port_checks, port_findings = scan_ports(port_host, self.settings)
-        findings.extend(port_findings)
-        risk_score, risk_level, all_findings = calculate_risk(http, findings)
+        port_checks: list = []
+        if dns.resolved and dns.ip:
+            port_checks, port_findings = scan_ports(dns.ip, self.settings)
+            findings.extend(port_findings)
+        else:
+            logger.info("ports_skipped", domain=domain, reason="dns_unresolved")
+
+        risk_score, risk_level, all_findings = calculate_risk(
+            http,
+            findings,
+            dns_resolved=dns.resolved,
+        )
 
         result = ScanResult(
             domain=domain,

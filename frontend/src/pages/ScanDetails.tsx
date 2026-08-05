@@ -78,9 +78,29 @@ export function ScanDetails() {
   const sortedFindings = [...scan.findings].sort(
     (a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
   )
+  const inProgress = scan.status === 'PENDING' || scan.status === 'QUEUED' || scan.status === 'RUNNING'
 
   return (
     <VStack align="stretch" spacing={6}>
+      {inProgress ? (
+        <Box
+          borderWidth="1px"
+          borderColor="brand.500"
+          bg="brand.50"
+          _dark={{ bg: 'whiteAlpha.100', borderColor: 'brand.400' }}
+          borderRadius="md"
+          px={4}
+          py={3}
+        >
+          <Text fontSize="sm" fontWeight="600">
+            Scan {scan.status.toLowerCase()}…
+          </Text>
+          <Text fontSize="sm" color="cyber.muted">
+            Results refresh automatically every few seconds until the worker finishes.
+          </Text>
+        </Box>
+      ) : null}
+
       <Flex
         justify="space-between"
         align={{ base: 'stretch', md: 'center' }}

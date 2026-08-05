@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/cyberwatch/backend-api/internal/middleware"
 	"github.com/cyberwatch/backend-api/internal/response"
 	"github.com/cyberwatch/backend-api/internal/services"
 	"github.com/gin-gonic/gin"
@@ -27,13 +28,28 @@ func (h *ScanHandler) Create(c *gin.Context) {
 		return
 	}
 
-	scan, err := h.service.Create(services.CreateScanInput{CompanyID: req.CompanyID})
+	requestedBy := "unknown"
+	if user, ok := middleware.UserFromContext(c); ok {
+		if user.Email != "" {
+			requestedBy = user.Email
+		} else if user.Name != "" {
+			requestedBy = user.Name
+		} else if user.Subject != "" {
+			requestedBy = user.Subject
+		}
+	}
+
+	scan, err := h.service.Create(services.CreateScanCommand{
+		CompanyID:   req.CompanyID,
+		RequestedBy: requestedBy,
+	})
 	if err != nil {
 		handleServiceError(c, err)
 		return
 	}
 
-	response.JSON(c, http.StatusCreated, scan)
+	// Async acceptance — worker completes later via HTTP or RabbitMQ.
+	response.JSON(c, http.StatusAccepted, scan)
 }
 
 func (h *ScanHandler) List(c *gin.Context) {
@@ -57,6 +73,5 @@ func (h *ScanHandler) GetByID(c *gin.Context) {
 		handleServiceError(c, err)
 		return
 	}
-
 	response.JSON(c, http.StatusOK, scan)
 }

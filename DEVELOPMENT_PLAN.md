@@ -16,7 +16,7 @@ Build a small but realistic cybersecurity monitoring platform.
 | 2 | Go API + PostgreSQL | **Done** |
 | 3 | Keycloak IAM | **Done** |
 | 4 | Python scanner worker | **Done** |
-| 5 | RabbitMQ | Next |
+| 5 | RabbitMQ async pipeline | **Done** |
 | 6 | Redis | Planned |
 | 7 | Elasticsearch | Planned |
 | 8 | Docker Compose | Planned |
@@ -33,118 +33,82 @@ flowchart TB
   FE -->|"Bearer JWT"| API[Go API]
   API -->|"JWKS verify"| KC
   API --> DB[(PostgreSQL)]
-  API -.->|"dev HTTP"| Worker[Python worker]
-  API -.-> MQ[RabbitMQ]
-  MQ -.-> Worker
-  Worker -->|"findings JSON"| API
+  API -->|"SCAN_MODE=http"| WorkerHTTP[Worker POST /jobs]
+  API -->|"SCAN_MODE=rabbitmq"| MQ[RabbitMQ scan_jobs]
+  MQ --> WorkerRMQ[Worker consumer]
+  WorkerHTTP --> DB
+  WorkerRMQ --> DB
 ```
 
 | Relation | Status |
 |----------|--------|
 | User → React → Keycloak → API → PostgreSQL | **Done** |
-| Python worker `POST /scan` (standalone) | **Done** |
-| API → RabbitMQ → Worker | Planned |
-
-Public overview: [`README.md`](README.md)
+| Python `ScanService` + `POST /scan` | **Done** |
+| Dual transport HTTP `/jobs` + RabbitMQ | **Done** |
 
 ---
 
-## Phase 1 — Frontend ✅
+## Phase 1–4 ✅
 
-`frontend/` — React · TypeScript · Vite · Chakra · TanStack Query · Axios · Recharts · oidc-client-ts
+See earlier sections in git history / package READMEs.
 
-**Done:** Dashboard · Companies · Scan details · Keycloak OIDC · AlgoSecure UI + light/dark mode
-
-See [`frontend/README.md`](frontend/README.md).
-
----
-
-## Phase 2 — Go API + PostgreSQL ✅
-
-`backend-api/` — Go · Gin · GORM · PostgreSQL
-
-**Done:** Company → Scan → Vulnerability · JWT-ready routes · env config
-
-See [`backend-api/README.md`](backend-api/README.md).
+- Frontend: [`frontend/README.md`](frontend/README.md)
+- API: [`backend-api/README.md`](backend-api/README.md)
+- Keycloak: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
+- Worker scanners: [`worker/README.md`](worker/README.md)
 
 ---
 
-## Phase 3 — Keycloak ✅
+## Phase 5 — RabbitMQ + dual mode ✅
 
-Hosted Cloud-IAM · clients `cyberwatch-frontend` / `cyberwatch-api` · roles `ADMIN` / `ANALYST`
+**Do not remove HTTP.** Switch with env:
 
-Guide: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
+| `SCAN_MODE` | Behavior |
+|-------------|----------|
+| `http` (default) | Go publishes to `WORKER_URL/jobs` (async background) |
+| `rabbitmq` | Go publishes to exchange `cyberwatch.scans` / queue `scan_jobs` |
 
----
+**Flow:** `POST /api/scans` → create `PENDING` → publish job → `QUEUED` → **202 Accepted**  
+Worker: `RUNNING` → `ScanService` → store vulns + score → `COMPLETED` / `FAILED`
 
-## Phase 4 — Python scanner ✅
+**Retry:** 3 attempts → `scan_dead_letter`
 
-`worker/` — FastAPI standalone (no RabbitMQ yet).
+**Frontend:** Scan details polls every 3s while `PENDING` / `QUEUED` / `RUNNING`
 
-**Pipeline:** validate → DNS → HTTP → headers → technologies → ports → risk → JSON
-
-**Run:**
+### Dev run (HTTP)
 
 ```powershell
+# Worker
 cd worker
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8001
+
+# API (.env): SCAN_MODE=http, WORKER_URL=http://localhost:8001
+cd backend-api
+go run ./cmd/server
 ```
 
-`POST /scan` with `{ "domain": "example.com" }`
+### Async run (RabbitMQ)
 
-Business logic is in `ScanService` — queue transport can wrap it later.
+```powershell
+docker run -d --name cyberwatch-rabbit -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 
-See [`worker/README.md`](worker/README.md).
+# Worker consumer
+cd worker
+python -m app.consumer
 
----
-
-## Phase 5 — RabbitMQ (next)
-
-- Queue `scan_jobs`
-- API publishes on scan create
-- Worker consumes and returns / persists findings
-- Replace temporary direct HTTP call
+# API (.env): SCAN_MODE=rabbitmq, RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+```
 
 ---
 
-## Phase 6 — Redis
+## Phase 6–9
 
-Cache dashboard stats and scan status.
-
----
-
-## Phase 7 — Elasticsearch
-
-Worker logs and scan events.
-
----
-
-## Phase 8 — Docker
-
-Compose: frontend · api · worker · postgres · rabbitmq · redis · elasticsearch  
-Keycloak stays on Cloud-IAM unless moved later.
-
----
-
-## Phase 9 — Demo
-
-1. Login (Keycloak)
-2. Add company (`ADMIN`)
-3. Start scan
-4. Worker executes (HTTP now / RabbitMQ next)
-5. Results on dashboard
-
-> I built a simplified External Attack Surface Monitoring platform using a distributed architecture close to real cybersecurity products.
+Redis · Elasticsearch · Docker Compose · Demo prep — planned.
 
 ---
 
 ## Security rules
 
-- No secrets in code
-- Env vars only
-- JWT + roles on API
-- Keycloak owns passwords
-- Worker: passive checks only, short timeouts, fixed port list
+- No secrets in code · env vars only
+- JWT + roles on API · Keycloak owns passwords
+- Worker: passive checks only · durable queue messages · DLQ on final failure

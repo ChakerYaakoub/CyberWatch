@@ -26,6 +26,8 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("KEYCLOAK_URL", "http://localhost:8081")
 	t.Setenv("KEYCLOAK_REALM", "CyberWatch")
 	t.Setenv("KEYCLOAK_CLIENT_ID", "cyberwatch-api")
+	t.Setenv("SCAN_MODE", "http")
+	t.Setenv("WORKER_URL", "http://localhost:8001")
 	t.Setenv("APP_PORT", "9090")
 	t.Setenv("CORS_ORIGIN", "http://localhost:5173")
 
@@ -35,6 +37,7 @@ func TestLoadFromEnv(t *testing.T) {
 	require.Equal(t, "secret", cfg.DBPassword)
 	require.Equal(t, "9090", cfg.AppPort)
 	require.Equal(t, "CyberWatch", cfg.KeycloakRealm)
+	require.Equal(t, "http", cfg.ScanMode)
 	require.Contains(t, cfg.DSN(), "host=db.internal")
 	require.Contains(t, cfg.DSN(), "password=secret")
 	require.NotContains(t, cfg.DSN(), "password=password")
@@ -55,6 +58,9 @@ func clearEnv(t *testing.T) {
 		"APP_PORT",
 		"APP_ENV",
 		"CORS_ORIGIN",
+		"SCAN_MODE",
+		"WORKER_URL",
+		"RABBITMQ_URL",
 	}
 	for _, key := range keys {
 		require.NoError(t, os.Unsetenv(key))

@@ -1,4 +1,4 @@
-export type ScanStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+export type ScanStatus = 'PENDING' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED'
 
 export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 

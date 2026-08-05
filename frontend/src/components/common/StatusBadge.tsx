@@ -12,6 +12,7 @@ const riskColorMap: Record<RiskLevel, string> = {
 const statusColorMap: Record<ScanStatus | CompanyStatus, string> = {
   COMPLETED: 'green',
   RUNNING: 'cyan',
+  QUEUED: 'purple',
   PENDING: 'yellow',
   FAILED: 'red',
   Active: 'green',

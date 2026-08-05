@@ -28,7 +28,7 @@ It provides a full-stack application to:
 | Go REST API + PostgreSQL | **Done** |
 | Keycloak IAM (hosted Cloud-IAM) | **Done** |
 | Python scanner worker (FastAPI `/scan`) | **Done** |
-| RabbitMQ async jobs | Planned |
+| Async scans — HTTP `/jobs` + RabbitMQ | **Done** |
 | Redis / Elasticsearch / Docker / CI | Planned |
 
 # Business context
@@ -61,11 +61,11 @@ flowchart TB
   end
 
   subgraph Scanner["Scanner — Done"]
-    Worker["Python worker :8001<br/>FastAPI · DNS · HTTP · headers · tech · ports · risk"]
+    Worker["Python worker :8001<br/>ScanService · /scan · /jobs · consumer"]
   end
 
-  subgraph Future["Async jobs — Planned"]
-    MQ[["RabbitMQ<br/>scan_jobs"]]
+  subgraph Bus["Messaging — Done"]
+    MQ[["RabbitMQ<br/>cyberwatch.scans / scan_jobs"]]
   end
 
   User -->|"opens UI"| FE
@@ -74,10 +74,10 @@ flowchart TB
   FE -->|"2. REST /api/* + Bearer JWT"| API
   API -->|"3. verify JWT (JWKS)"| KC
   API -->|"4. CRUD / queries"| DB
-  API -.->|"5. POST /scan (dev)"| Worker
-  API -.->|"6. publish job"| MQ
-  MQ -.->|"7. consume"| Worker
-  Worker -->|"8. findings JSON"| API
+  API -->|"5a. SCAN_MODE=http"| Worker
+  API -->|"5b. SCAN_MODE=rabbitmq"| MQ
+  MQ -->|"6. consume"| Worker
+  Worker -->|"7. status + findings"| DB
 ```
 
 ### How pieces relate (today)
@@ -89,8 +89,9 @@ flowchart TB
 | React | Go API | Authenticated REST calls with access token |
 | Go API | Keycloak | Validates JWT signature using realm JWKS |
 | Go API | PostgreSQL | Stores companies, scans, vulnerabilities |
+| Go API | Worker / RabbitMQ | `SCAN_MODE=http` → `POST /jobs` · `rabbitmq` → `scan_jobs` |
+| Worker | PostgreSQL | Updates scan status + vulnerabilities |
 | Go API | User roles | `ADMIN` / `ANALYST` enforce write permissions |
-| Python worker | — | Standalone `POST /scan` passive engine (RabbitMQ later) |
 
 ### Auth flow
 
@@ -113,20 +114,21 @@ sequenceDiagram
   API->>FE: JSON { data } or error
 ```
 
-### Planned async scan flow
-
-Worker is ready today via HTTP. RabbitMQ replaces the direct call in the next phase.
+### Scan pipeline
 
 ```mermaid
 flowchart LR
-  FE[React: Start scan] --> API[Go API]
-  API -.->|dev: HTTP| W[Python worker POST /scan]
-  API -.->|next: queue| MQ[RabbitMQ]
-  MQ -.-> W
-  W -->|JSON findings| API
-  API --> DB[(PostgreSQL)]
-  DB --> FE2[Dashboard / scan details]
+  FE[React: Start scan] --> API[Go API 202]
+  API -->|SCAN_MODE=http| W1[Worker POST /jobs]
+  API -->|SCAN_MODE=rabbitmq| MQ[RabbitMQ]
+  MQ --> W2[Worker consumer]
+  W1 --> SVC[ScanService]
+  W2 --> SVC
+  SVC --> DB[(PostgreSQL)]
+  DB --> FE2[Scan details polling]
 ```
+
+Statuses: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 
 # Technology stack
 
@@ -136,6 +138,7 @@ flowchart LR
 - React Router · TanStack Query · Axios · Recharts
 - oidc-client-ts (no local login page)
 - UI: AlgoSecure-inspired green / navy · light & dark mode
+- Scan details auto-refresh while in progress
 
 **Pages:** Dashboard · Companies · Scan details · `/auth/callback` · `/silent-renew`
 
@@ -144,12 +147,14 @@ flowchart LR
 - Go · Gin · GORM · PostgreSQL
 - JWT via Keycloak JWKS
 - RBAC middleware on `/api/*` (`GET /health` is public)
+- `SCAN_MODE=http|rabbitmq` · `internal/messaging` publisher interface
 
 ## Scanner worker (`worker/`)
 
-- Python 3.12+ · FastAPI · Uvicorn · Pydantic
+- Python 3.12+ · FastAPI · Uvicorn · Pydantic · Pika
 - Passive checks: DNS · HTTP · security headers · technologies · common ports · risk score
-- `POST /scan` — see [`worker/README.md`](worker/README.md)
+- `POST /scan` (sync debug) · `POST /jobs` (dev async) · `python -m app.consumer` (RabbitMQ)
+- See [`worker/README.md`](worker/README.md)
 
 ## Authentication (Keycloak)
 
@@ -164,7 +169,6 @@ Setup: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
 | Component | Role |
 |-----------|------|
-| RabbitMQ | Async `scan_jobs` (replace direct HTTP to worker) |
 | Redis | Cache dashboard / scan status |
 | Elasticsearch | Worker logs / events |
 
@@ -241,7 +245,7 @@ More detail: [`backend-api/README.md`](backend-api/README.md) · [`frontend/READ
 | 2 | Go API + PostgreSQL | **Done** |
 | 3 | Keycloak OIDC + JWT RBAC | **Done** |
 | 4 | Python scanner worker | **Done** |
-| 5 | RabbitMQ | Next |
+| 5 | RabbitMQ + dual scan transport | **Done** |
 | 6–9 | Redis · ES · Docker · CI/CD | Planned |
 
 Full checklist: [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)

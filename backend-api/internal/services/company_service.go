@@ -30,10 +30,6 @@ type UpdateCompanyInput struct {
 	Domain string
 }
 
-type CreateScanInput struct {
-	CompanyID uint
-}
-
 type DashboardStats struct {
 	SecurityScore          int   `json:"securityScore"`
 	Companies              int64 `json:"companies"`

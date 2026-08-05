@@ -18,6 +18,13 @@ export function useScan(id: string | undefined) {
     queryFn: () => getScan(numericId),
     enabled: Number.isFinite(numericId) && numericId > 0,
     select: toScanListItem,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      if (status === 'PENDING' || status === 'QUEUED' || status === 'RUNNING') {
+        return 3000
+      }
+      return false
+    },
   })
 }
 
