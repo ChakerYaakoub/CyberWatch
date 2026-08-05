@@ -45,7 +45,7 @@ export function ScanHistoryTable({ scans }: ScanHistoryTableProps) {
             </Thead>
             <Tbody>
               {scans.map((scan) => (
-                <Tr key={scan.id} _hover={{ bg: 'whiteAlpha.50' }}>
+                <Tr key={scan.id} _hover={{ bg: 'blackAlpha.50' }}>
                   <Td>
                     <ChakraLink
                       as={Link}

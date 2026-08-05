@@ -10,6 +10,7 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { NavLink } from 'react-router-dom'
+import { BrandLogo } from './BrandLogo'
 
 interface SidebarProps {
   isOpen: boolean
@@ -33,11 +34,11 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
               borderRadius="md"
               fontSize="sm"
               fontWeight={isActive ? '600' : '500'}
-              color={isActive ? 'brand.500' : 'cyber.muted'}
-              bg={isActive ? 'whiteAlpha.100' : 'transparent'}
+              color={isActive ? 'brand.500' : 'chrome.muted'}
+              bg={isActive ? 'chrome.active' : 'transparent'}
               borderLeftWidth="2px"
               borderLeftColor={isActive ? 'brand.500' : 'transparent'}
-              _hover={{ bg: 'whiteAlpha.50', color: 'cyber.text' }}
+              _hover={{ bg: 'chrome.hover', color: 'chrome.text' }}
               transition="all 0.15s ease"
             >
               {item.label}
@@ -49,43 +50,15 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-function SidebarBrand() {
-  return (
-    <Flex align="center" gap={3} mb={8} px={1}>
-      <Box
-        w="36px"
-        h="36px"
-        borderRadius="md"
-        borderWidth="1px"
-        borderColor="brand.500"
-        bg="rgba(0, 212, 170, 0.12)"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Text color="brand.500" fontWeight="800" fontSize="sm" fontFamily="mono">
-          CW
-        </Text>
-      </Box>
-      <Box>
-        <Text fontWeight="700" letterSpacing="tight" lineHeight="1.1">
-          CyberWatch
-        </Text>
-        <Text fontSize="xs" color="cyber.muted" fontFamily="mono">
-          SOC Console
-        </Text>
-      </Box>
-    </Flex>
-  )
-}
-
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Box h="full" py={6} px={4}>
-      <SidebarBrand />
+      <Box mb={8} px={1}>
+        <BrandLogo />
+      </Box>
       <Text
         fontSize="xs"
-        color="cyber.muted"
+        color="chrome.muted"
         textTransform="uppercase"
         letterSpacing="0.08em"
         mb={3}
@@ -106,9 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         display={{ base: 'none', lg: 'block' }}
         w="260px"
         flexShrink={0}
-        borderRightWidth="1px"
-        borderColor="cyber.border"
-        bg="cyber.panel"
+        bg="chrome.bg"
         h="100vh"
         overflowY="auto"
       >
@@ -117,8 +88,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent bg="cyber.panel" maxW="260px">
-          <CloseButton position="absolute" right={3} top={3} onClick={onClose} />
+        <DrawerContent bg="chrome.bg" maxW="260px">
+          <CloseButton position="absolute" right={3} top={3} color="chrome.text" onClick={onClose} />
           <DrawerBody p={0}>
             <SidebarContent onNavigate={onClose} />
           </DrawerBody>

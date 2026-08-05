@@ -233,7 +233,7 @@ export function Companies() {
                 </Thead>
                 <Tbody>
                   {companies.map((company) => (
-                    <Tr key={company.id} _hover={{ bg: 'whiteAlpha.50' }}>
+                    <Tr key={company.id} _hover={{ bg: 'blackAlpha.50' }}>
                       <Td fontWeight="600">{company.name}</Td>
                       <Td fontFamily="mono" fontSize="sm" color="cyber.muted">
                         {company.domain}

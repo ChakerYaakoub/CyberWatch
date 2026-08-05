@@ -85,7 +85,7 @@ export function OverviewCards({ stats }: OverviewCardsProps) {
   return (
     <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
       <RiskScoreCard score={stats.securityScore} />
-      <StatCard label="Active Scans" value={stats.activeScans} hint="Currently in progress" accent="cyan.300" />
+      <StatCard label="Active Scans" value={stats.activeScans} hint="Currently in progress" accent="cyber.info" />
       <VulnerabilityCard count={stats.criticalVulnerabilities} />
       <StatCard
         label="Monitored Companies"

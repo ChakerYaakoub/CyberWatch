@@ -12,6 +12,8 @@ import {
   Badge,
 } from '@chakra-ui/react'
 import { useAuth } from '../../auth/useAuth'
+import { BrandLogo } from './BrandLogo'
+import { ColorModeToggle } from './ColorModeToggle'
 
 interface NavbarProps {
   onOpenSidebar: () => void
@@ -19,7 +21,7 @@ interface NavbarProps {
 
 export function Navbar({ onOpenSidebar }: NavbarProps) {
   const { user, logout, isAdmin } = useAuth()
-  const primaryRole = isAdmin ? 'ADMIN' : user?.roles[0] ?? 'USER'
+  const primaryRole = isAdmin ? 'ADMIN' : (user?.roles[0] ?? 'USER')
 
   return (
     <Flex
@@ -28,9 +30,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
       align="center"
       justify="space-between"
       px={{ base: 4, md: 6 }}
-      borderBottomWidth="1px"
-      borderColor="cyber.border"
-      bg="cyber.panel"
+      bg="chrome.bg"
       flexShrink={0}
       zIndex={10}
     >
@@ -39,6 +39,8 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           aria-label="Open menu"
           display={{ base: 'inline-flex', lg: 'none' }}
           variant="ghost"
+          color="chrome.text"
+          _hover={{ bg: 'chrome.hover' }}
           onClick={onOpenSidebar}
           icon={
             <Box as="span" fontSize="lg" lineHeight={1}>
@@ -47,46 +49,48 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           }
         />
         <Box display={{ base: 'block', lg: 'none' }}>
-          <Text fontWeight="700" color="brand.500" letterSpacing="tight">
-            CyberWatch
-          </Text>
+          <BrandLogo compact />
         </Box>
-        <Text display={{ base: 'none', md: 'block' }} color="cyber.muted" fontSize="sm">
+        <Text display={{ base: 'none', md: 'block' }} color="chrome.muted" fontSize="sm">
           External Attack Surface Monitoring
         </Text>
       </HStack>
 
-      <Menu>
-        <MenuButton>
-          <HStack spacing={3} cursor="pointer">
-            <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
-              <Text fontSize="sm" fontWeight="600">
-                {user?.name ?? user?.email ?? 'User'}
-              </Text>
-              <HStack justify="flex-end" spacing={2}>
-                <Badge colorScheme={isAdmin ? 'purple' : 'cyan'} fontSize="0.65rem">
-                  {primaryRole}
-                </Badge>
-                <Text fontSize="xs" color="cyber.muted">
-                  {user?.email}
+      <HStack spacing={2}>
+        <ColorModeToggle />
+
+        <Menu>
+          <MenuButton>
+            <HStack spacing={3} cursor="pointer">
+              <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
+                <Text fontSize="sm" fontWeight="600" color="chrome.text">
+                  {user?.name ?? user?.email ?? 'User'}
                 </Text>
-              </HStack>
-            </Box>
-            <Avatar size="sm" name={user?.name ?? user?.email ?? 'CW'} bg="brand.500" color="gray.900" />
-          </HStack>
-        </MenuButton>
-        <MenuList bg="cyber.panel" borderColor="cyber.border">
-          <MenuItem
-            bg="cyber.panel"
-            _hover={{ bg: 'cyber.panelAlt' }}
-            onClick={() => {
-              void logout()
-            }}
-          >
-            Sign out
-          </MenuItem>
-        </MenuList>
-      </Menu>
+                <HStack justify="flex-end" spacing={2}>
+                  <Badge bg="brand.500" color="white" fontSize="0.65rem">
+                    {primaryRole}
+                  </Badge>
+                  <Text fontSize="xs" color="chrome.muted">
+                    {user?.email}
+                  </Text>
+                </HStack>
+              </Box>
+              <Avatar size="sm" name={user?.name ?? user?.email ?? 'CW'} bg="brand.500" color="white" />
+            </HStack>
+          </MenuButton>
+          <MenuList bg="cyber.panel" borderColor="cyber.border">
+            <MenuItem
+              bg="cyber.panel"
+              _hover={{ bg: 'cyber.panelAlt' }}
+              onClick={() => {
+                void logout()
+              }}
+            >
+              Sign out
+            </MenuItem>
+          </MenuList>
+        </Menu>
+      </HStack>
     </Flex>
   )
 }

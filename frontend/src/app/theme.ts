@@ -1,47 +1,69 @@
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react'
 
 const config: ThemeConfig = {
-  initialColorMode: 'dark',
+  initialColorMode: 'light',
   useSystemColorMode: false,
 }
 
+/** AlgoSecure brand — green + navy from algosecure.fr */
 const colors = {
   brand: {
-    50: '#E6FFFA',
-    100: '#B2F5EA',
-    200: '#81E6D9',
-    300: '#4FD1C5',
-    400: '#38B2AC',
-    500: '#00D4AA',
-    600: '#00B894',
-    700: '#009B7A',
-    800: '#007A5E',
-    900: '#005C47',
+    50: '#F2F8E9',
+    100: '#DCECBE',
+    200: '#C5E094',
+    300: '#A9D064',
+    400: '#94C44A',
+    500: '#80B942',
+    600: '#6A9B34',
+    700: '#547C29',
+    800: '#3E5D1F',
+    900: '#283E14',
   },
-  cyber: {
-    bg: '#0B1220',
-    panel: '#111827',
-    panelAlt: '#151E2E',
-    border: '#1E293B',
-    muted: '#94A3B8',
-    text: '#E2E8F0',
-    accent: '#00D4AA',
-    danger: '#F43F5E',
-    warning: '#F59E0B',
-    info: '#38BDF8',
+  navy: {
+    50: '#E8EEF5',
+    100: '#C5D2E3',
+    200: '#9BB0C9',
+    300: '#6F8EAF',
+    400: '#4A6F96',
+    500: '#2A517A',
+    600: '#1A3A5C',
+    700: '#12233A',
+    800: '#0B1A2E',
+    900: '#07101C',
   },
 }
 
 export const theme = extendTheme({
   config,
   colors,
+  semanticTokens: {
+    colors: {
+      // Content area — lighter than chrome in dark mode so nav stays distinct
+      'cyber.bg': { default: '#F8F8F8', _dark: '#152A42' },
+      'cyber.panel': { default: '#FFFFFF', _dark: '#1B334D' },
+      'cyber.panelAlt': { default: '#F3F3F3', _dark: '#203A56' },
+      'cyber.border': { default: '#E5E5E5', _dark: '#2A517A' },
+      'cyber.muted': { default: '#5A6570', _dark: '#9BB0C9' },
+      'cyber.text': { default: '#333333', _dark: '#E8EEF5' },
+      'cyber.accent': { default: 'brand.500', _dark: 'brand.400' },
+      'cyber.danger': { default: '#E30613', _dark: '#FF4D57' },
+      'cyber.warning': { default: '#D97706', _dark: '#FBBF24' },
+      'cyber.info': { default: '#0284C7', _dark: '#38BDF8' },
+      // Navbar / sidebar — always deep AlgoSecure navy
+      'chrome.bg': { default: 'navy.800', _dark: 'navy.800' },
+      'chrome.text': { default: 'white', _dark: 'white' },
+      'chrome.muted': { default: 'whiteAlpha.700', _dark: 'whiteAlpha.700' },
+      'chrome.hover': { default: 'whiteAlpha.100', _dark: 'whiteAlpha.100' },
+      'chrome.active': { default: 'whiteAlpha.200', _dark: 'whiteAlpha.200' },
+    },
+  },
   fonts: {
-    heading: `'IBM Plex Sans', sans-serif`,
-    body: `'IBM Plex Sans', sans-serif`,
+    heading: `'Montserrat', sans-serif`,
+    body: `'Source Sans 3', sans-serif`,
     mono: `'JetBrains Mono', monospace`,
   },
   styles: {
-    global: {
+    global: (props: { colorMode: string }) => ({
       body: {
         bg: 'cyber.bg',
         color: 'cyber.text',
@@ -52,13 +74,13 @@ export const theme = extendTheme({
         height: '8px',
       },
       '::-webkit-scrollbar-track': {
-        background: '#0B1220',
+        background: props.colorMode === 'dark' ? '#152A42' : '#F8F8F8',
       },
       '::-webkit-scrollbar-thumb': {
-        background: '#1E293B',
+        background: props.colorMode === 'dark' ? '#2A517A' : '#C5C5C5',
         borderRadius: '4px',
       },
-    },
+    }),
   },
   components: {
     Button: {
@@ -68,18 +90,22 @@ export const theme = extendTheme({
       variants: {
         solid: {
           bg: 'brand.500',
-          color: 'gray.900',
+          color: 'white',
           fontWeight: '600',
-          _hover: { bg: 'brand.400' },
+          borderRadius: 'full',
+          _hover: { bg: 'brand.600' },
+          _active: { bg: 'brand.700' },
         },
         outline: {
           borderColor: 'cyber.border',
           color: 'cyber.text',
-          _hover: { bg: 'cyber.panelAlt' },
+          borderRadius: 'full',
+          _hover: { bg: 'cyber.panelAlt', borderColor: 'brand.400' },
         },
         ghost: {
           color: 'cyber.muted',
-          _hover: { bg: 'cyber.panelAlt', color: 'cyber.text' },
+          borderRadius: 'full',
+          _hover: { bg: 'blackAlpha.50', color: 'cyber.text', _dark: { bg: 'whiteAlpha.100' } },
         },
       },
     },
@@ -90,7 +116,7 @@ export const theme = extendTheme({
           borderWidth: '1px',
           borderColor: 'cyber.border',
           borderRadius: 'lg',
-          boxShadow: 'none',
+          boxShadow: '0 1px 3px rgba(11, 26, 46, 0.06)',
         },
       },
     },
@@ -102,11 +128,11 @@ export const theme = extendTheme({
             borderColor: 'cyber.border',
             borderWidth: '1px',
             color: 'cyber.text',
-            _hover: { bg: 'cyber.panelAlt' },
+            _hover: { bg: 'cyber.panel' },
             _focus: {
-              bg: 'cyber.panelAlt',
+              bg: 'cyber.panel',
               borderColor: 'brand.500',
-              boxShadow: '0 0 0 1px #00D4AA',
+              boxShadow: '0 0 0 1px #80B942',
             },
             _placeholder: { color: 'cyber.muted' },
           },
@@ -126,6 +152,7 @@ export const theme = extendTheme({
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
             fontWeight: '600',
+            bg: 'cyber.panelAlt',
           },
           td: {
             borderColor: 'cyber.border',
@@ -139,15 +166,25 @@ export const theme = extendTheme({
           bg: 'cyber.panel',
           borderWidth: '1px',
           borderColor: 'cyber.border',
+          boxShadow: '0 12px 40px rgba(11, 26, 46, 0.16)',
         },
-        header: {
+        header: { color: 'cyber.text' },
+        body: { color: 'cyber.text' },
+        overlay: { bg: 'blackAlpha.600' },
+      },
+    },
+    Menu: {
+      baseStyle: {
+        list: {
+          bg: 'cyber.panel',
+          borderColor: 'cyber.border',
+          boxShadow: '0 8px 24px rgba(11, 26, 46, 0.12)',
+        },
+        item: {
+          bg: 'cyber.panel',
           color: 'cyber.text',
-        },
-        body: {
-          color: 'cyber.text',
-        },
-        overlay: {
-          bg: 'blackAlpha.700',
+          _hover: { bg: 'cyber.panelAlt' },
+          _focus: { bg: 'cyber.panelAlt' },
         },
       },
     },
@@ -157,19 +194,15 @@ export const theme = extendTheme({
           tab: {
             color: 'cyber.muted',
             _selected: {
-              color: 'brand.500',
+              color: 'brand.600',
               borderColor: 'cyber.border',
               borderBottomColor: 'cyber.panel',
               bg: 'cyber.panel',
+              fontWeight: '600',
             },
           },
-          tablist: {
-            borderColor: 'cyber.border',
-          },
-          tabpanel: {
-            px: 0,
-            pt: 4,
-          },
+          tablist: { borderColor: 'cyber.border' },
+          tabpanel: { px: 0, pt: 4 },
         },
       },
     },
