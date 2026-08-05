@@ -1,6 +1,7 @@
 import type { Company, CreateCompanyPayload, UpdateCompanyPayload } from '../types'
 import { api, unwrapData } from './api'
 
+/** Company CRUD against Go `/api/companies`. */
 export async function getCompanies(): Promise<Company[]> {
   return unwrapData(api.get('/companies'))
 }

@@ -18,6 +18,7 @@ export function useScan(id: string | undefined) {
     queryFn: () => getScan(numericId),
     enabled: Number.isFinite(numericId) && numericId > 0,
     select: toScanListItem,
+    // Live progress without WebSockets: poll while the worker is still running.
     refetchInterval: (query) => {
       const status = query.state.data?.status
       if (status === 'PENDING' || status === 'QUEUED' || status === 'RUNNING') {

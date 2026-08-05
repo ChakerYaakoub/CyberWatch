@@ -10,6 +10,7 @@ if (!apiBaseURL) {
   )
 }
 
+/** Shared Axios client — all business calls go through here. */
 export const api = axios.create({
   baseURL: apiBaseURL,
   headers: {
@@ -18,6 +19,7 @@ export const api = axios.create({
   timeout: 15000,
 })
 
+// Attach Keycloak access token on every request.
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await getAccessToken()
   if (token) {
@@ -26,6 +28,7 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   return config
 })
 
+// Session expired → send user back to Keycloak login.
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorBody>) => {
@@ -64,6 +67,7 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
   return fallback
 }
 
+/** Unwrap Go envelope `{ data: T }` → `T`. */
 export async function unwrapData<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
   const response = await promise
   return response.data.data

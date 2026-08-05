@@ -1,6 +1,7 @@
 import type { CreateScanPayload, Scan } from '../types'
 import { api, unwrapData } from './api'
 
+/** Scan list / detail / create against Go `/api/scans`. */
 export async function getScans(): Promise<Scan[]> {
   const scans = await unwrapData<Scan[]>(api.get('/scans'))
   return scans.map(normalizeScan)

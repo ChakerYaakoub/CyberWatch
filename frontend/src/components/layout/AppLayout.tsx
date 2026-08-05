@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
 
+/** Shell around authenticated pages: sidebar + top bar + page outlet. */
 export function AppLayout() {
   const { isOpen, onOpen, onClose } = useDisclosure()
 

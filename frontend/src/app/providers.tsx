@@ -19,6 +19,7 @@ interface ProvidersProps {
   children: ReactNode
 }
 
+/** Outer → inner: React Query, Chakra, Router, Auth. */
 export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>

@@ -4,6 +4,7 @@ import { authConfig } from './authConfig'
 let userManager: UserManager | null = null
 let callbackPromise: Promise<User | null> | null = null
 
+/** Singleton OIDC client (tokens stored in sessionStorage). */
 export function getUserManager(): UserManager {
   if (!userManager) {
     userManager = new UserManager({

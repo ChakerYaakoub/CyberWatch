@@ -4,6 +4,7 @@ import { Alert, AlertIcon, Button, VStack } from '@chakra-ui/react'
 import { LoadingState } from '../components/common/PageStates'
 import { useAuth } from './AuthProvider'
 
+/** Blocks app routes until Keycloak session exists; redirects to login if needed. */
 export function ProtectedRoute() {
   const { isAuthenticated, isLoading, login, authError } = useAuth()
   const loginStarted = useRef(false)

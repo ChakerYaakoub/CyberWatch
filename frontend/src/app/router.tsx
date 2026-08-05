@@ -7,6 +7,7 @@ import { Dashboard } from '../pages/Dashboard'
 import { ScanDetails } from '../pages/ScanDetails'
 import { SilentRenew } from '../pages/SilentRenew'
 
+/** Public OIDC routes stay outside ProtectedRoute to avoid login loops. */
 export function AppRouter() {
   return (
     <Routes>

@@ -20,6 +20,9 @@ Desktop.ini
 secrets/
 credentials.json
 
+# --- Local notes ---
+study/
+
 # --- Logs & temp ---
 *.log
 logs/

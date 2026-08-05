@@ -40,6 +40,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/** Pull ADMIN / ANALYST from Keycloak realm or client roles. */
 function extractRoles(profile: User['profile']): AppRole[] {
   const roles = new Set<AppRole>()
 
@@ -80,6 +81,7 @@ function extractRolesFromToken(accessToken: string): AppRole[] {
   }
 }
 
+/** Map OIDC user + JWT claims into the app's AuthUser shape. */
 export function mapOidcUser(oidcUser: User): AuthUser {
   const profile = oidcUser.profile
   const rolesFromProfile = extractRoles(profile)
@@ -94,6 +96,7 @@ export function mapOidcUser(oidcUser: User): AuthUser {
   }
 }
 
+/** Provides session state (user, roles, login/logout) to the whole tree. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)

@@ -8,6 +8,7 @@ if (!keycloakUrl || !realm || !clientId) {
   )
 }
 
+/** OIDC client settings for Keycloak (Authorization Code + PKCE via oidc-client-ts). */
 export const authConfig = {
   authority: `${keycloakUrl}/realms/${realm}`,
   client_id: clientId,
