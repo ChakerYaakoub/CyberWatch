@@ -39,7 +39,8 @@ func (p *HTTPPublisher) Publish(job ScanJob) error {
 		return fmt.Errorf("marshal scan job: %w", err)
 	}
 
-	// Async HTTP so the API can return 202 without waiting for the worker.
+	// Fire-and-forget: always return nil so ScanService marks QUEUED even if the
+	// worker is down (unlike RabbitPublisher, which can fail the scan).
 	go p.dispatch(payload, job.ScanID)
 	return nil
 }

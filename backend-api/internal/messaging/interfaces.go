@@ -10,6 +10,7 @@ const (
 )
 
 // Topology is loaded from environment (deploy-specific exchange/queue names).
+// MaxAttempts is carried for documentation/config symmetry; the worker enforces retries.
 type Topology struct {
 	Exchange           string
 	DeadLetterExchange string

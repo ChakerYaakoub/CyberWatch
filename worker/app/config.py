@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     database_sslmode: str = "disable"
 
     # Required only for python -m app.consumer
+    # Topology defaults must match Go RABBITMQ_* (worker uses different env names).
     rabbitmq_url: str = ""
     queue_name: str = "scan_jobs"
     exchange_name: str = "cyberwatch.scans"

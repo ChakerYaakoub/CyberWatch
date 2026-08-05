@@ -107,6 +107,7 @@ class ScanConsumer:
         properties: BasicProperties,
         body: bytes,
     ) -> None:
+        """Always ack: poison → DLQ; failure → republish or DLQ (never broker nack)."""
         try:
             payload = json.loads(body.decode("utf-8"))
             job = ScanJob.model_validate(payload)

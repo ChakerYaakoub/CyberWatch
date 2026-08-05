@@ -47,7 +47,8 @@ func NewRabbitPublisher(url string, topo Topology) (*RabbitPublisher, error) {
 }
 
 func (p *RabbitPublisher) declareTopology() error {
-	// Main exchange + DLX/queue so failed messages (after retries) are not lost.
+	// Main exchange + DLX/queue. Broker x-dead-letter-exchange is declared for
+	// compatibility; the worker uses app-level retry (ack + republish) / DLQ publish.
 	if err := p.ch.ExchangeDeclare(p.topo.Exchange, ExchangeType, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare exchange: %w", err)
 	}
