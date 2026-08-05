@@ -4,7 +4,7 @@ interface BrandLogoProps {
   compact?: boolean
 }
 
-/** Split logo inspired by AlgoSecure: first half green, second half white/text */
+/** Split logo: first half green, second half white/text */
 export function BrandLogo({ compact = false }: BrandLogoProps) {
   return (
     <Box lineHeight="1.1">

@@ -11,7 +11,7 @@
 ![RabbitMQ](https://img.shields.io/badge/Queue-RabbitMQ-FF6600)
 ![Docker](https://img.shields.io/badge/Infra-Docker%20Compose-2496ED)
 
-CyberWatch is a simplified **External Attack Surface Monitoring** platform inspired by [AlgoSecure AlgoLightHouse](https://www.algosecure.fr/conseil/algolighthouse/).
+CyberWatch is a simplified **External Attack Surface Monitoring** platform.
 
 It lets security analysts:
 
@@ -295,4 +295,4 @@ Target future architecture and notes: **[`docs/PLANNED.md`](docs/PLANNED.md)**
 
 ## Objective
 
-Demonstrate a secure, distributed full-stack cybersecurity monitoring platform — close to real products such as AlgoSecure AlgoLightHouse.
+Demonstrate a secure, distributed full-stack cybersecurity monitoring platform with an architecture close to real-world products.

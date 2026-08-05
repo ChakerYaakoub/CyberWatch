@@ -5,7 +5,7 @@ const config: ThemeConfig = {
   useSystemColorMode: false,
 }
 
-/** AlgoSecure brand — green + navy from algosecure.fr */
+/** CyberWatch brand — green + navy */
 const colors = {
   brand: {
     50: '#F2F8E9',
@@ -49,7 +49,7 @@ export const theme = extendTheme({
       'cyber.danger': { default: '#E30613', _dark: '#FF4D57' },
       'cyber.warning': { default: '#D97706', _dark: '#FBBF24' },
       'cyber.info': { default: '#0284C7', _dark: '#38BDF8' },
-      // Navbar / sidebar — always deep AlgoSecure navy
+      // Navbar / sidebar — deep navy chrome
       'chrome.bg': { default: 'navy.800', _dark: 'navy.800' },
       'chrome.text': { default: 'white', _dark: 'white' },
       'chrome.muted': { default: 'whiteAlpha.700', _dark: 'whiteAlpha.700' },
