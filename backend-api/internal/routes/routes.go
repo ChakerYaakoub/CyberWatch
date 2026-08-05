@@ -1,3 +1,4 @@
+// Package routes registers HTTP endpoints and middleware for the CyberWatch API.
 package routes
 
 import (
@@ -7,16 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handlers groups HTTP adapters injected from main.
 type Handlers struct {
 	Companies *handlers.CompanyHandler
 	Scans     *handlers.ScanHandler
 	Dashboard *handlers.DashboardHandler
 }
 
+// AuthHooks lets main inject JWT middleware (or TestAuth in tests).
 type AuthHooks struct {
 	Authenticate gin.HandlerFunc
 }
 
+// Setup builds the Gin engine: public /health, JWT-protected /api/*, role gates on writes.
 func Setup(corsOrigin string, h Handlers, authHooks AuthHooks) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())

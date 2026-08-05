@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestLoadRequiresDatabaseEnv ensures the API refuses to start without DB settings.
 func TestLoadRequiresDatabaseEnv(t *testing.T) {
 	clearEnv(t)
 
@@ -15,6 +16,7 @@ func TestLoadRequiresDatabaseEnv(t *testing.T) {
 	require.Contains(t, err.Error(), "DATABASE_")
 }
 
+// TestLoadFromEnv checks happy-path parsing of required + optional vars.
 func TestLoadFromEnv(t *testing.T) {
 	clearEnv(t)
 

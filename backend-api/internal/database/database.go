@@ -1,3 +1,4 @@
+// Package database opens PostgreSQL via GORM and applies AutoMigrate for models.
 package database
 
 import (
@@ -10,6 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// Connect opens a pooled GORM connection (shared DB with the Python worker).
 func Connect(dsn string, isDev bool) (*gorm.DB, error) {
 	logLevel := logger.Warn
 	if isDev {
@@ -34,7 +36,9 @@ func Connect(dsn string, isDev bool) (*gorm.DB, error) {
 	return db, nil
 }
 
+// AutoMigrate creates/updates tables for Company, Scan, Vulnerability.
 func AutoMigrate(db *gorm.DB) error {
+	// Keep schema in sync with models (also documented in migrations/001_init.sql).
 	if err := db.AutoMigrate(
 		&models.Company{},
 		&models.Scan{},

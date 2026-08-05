@@ -1,3 +1,4 @@
+// Package repositories isolates GORM / SQL access from business logic.
 package repositories
 
 import (
@@ -7,8 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrNotFound is returned when a row is missing (mapped to HTTP 404 by handlers).
 var ErrNotFound = errors.New("resource not found")
 
+// CompanyRepository persists monitored companies.
 type CompanyRepository struct {
 	db *gorm.DB
 }
@@ -51,6 +54,7 @@ func (r *CompanyRepository) ExistsByDomain(domain string) (bool, error) {
 	return count > 0, err
 }
 
+// ExistsByDomainExcludingID supports updates (same company may keep its domain).
 func (r *CompanyRepository) ExistsByDomainExcludingID(domain string, id uint) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.Company{}).
@@ -63,6 +67,7 @@ func (r *CompanyRepository) Update(company *models.Company) error {
 	return r.db.Save(company).Error
 }
 
+// Delete removes a company and cascades scans + vulnerabilities in one transaction.
 func (r *CompanyRepository) Delete(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var company models.Company

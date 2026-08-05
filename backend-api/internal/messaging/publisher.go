@@ -47,6 +47,7 @@ func NewRabbitPublisher(url string, topo Topology) (*RabbitPublisher, error) {
 }
 
 func (p *RabbitPublisher) declareTopology() error {
+	// Main exchange + DLX/queue so failed messages (after retries) are not lost.
 	if err := p.ch.ExchangeDeclare(p.topo.Exchange, ExchangeType, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare exchange: %w", err)
 	}
@@ -93,7 +94,7 @@ func (p *RabbitPublisher) Publish(job ScanJob) error {
 		false,
 		amqp.Publishing{
 			ContentType:  "application/json",
-			DeliveryMode: amqp.Persistent,
+			DeliveryMode: amqp.Persistent, // survive broker restart
 			Timestamp:    time.Now().UTC(),
 			Body:         body,
 			Headers: amqp.Table{

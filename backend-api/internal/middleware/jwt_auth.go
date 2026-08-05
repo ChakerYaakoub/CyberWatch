@@ -1,3 +1,4 @@
+// Package middleware provides Gin middlewares: CORS, logging, JWT auth, and RBAC.
 package middleware
 
 import (
@@ -14,12 +15,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JWTConfig configures Keycloak JWKS-based access-token validation.
 type JWTConfig struct {
 	KeycloakURL string
 	Realm       string
-	Audience    string // optional; cyberwatch-api client id when using audience validation
+	Audience    string // API client id (cyberwatch-api); used when reading resource_access roles
 }
 
+// Claims are the Keycloak JWT fields we care about for identity + roles.
 type Claims struct {
 	Email             string                          `json:"email"`
 	PreferredUsername string                          `json:"preferred_username"`
@@ -37,6 +40,10 @@ type ClientResourceAccess struct {
 	Roles []string `json:"roles"`
 }
 
+// NewJWTAuth loads Keycloak JWKS (with retries) and returns middleware that:
+//  1. Requires Authorization: Bearer <token>
+//  2. Verifies signature + issuer
+//  3. Extracts ADMIN/ANALYST roles into Gin context
 func NewJWTAuth(cfg JWTConfig) (gin.HandlerFunc, error) {
 	jwksURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
 		strings.TrimRight(cfg.KeycloakURL, "/"),
@@ -78,7 +85,7 @@ func NewJWTAuth(cfg JWTConfig) (gin.HandlerFunc, error) {
 
 		roles := extractRoles(claims, cfg.Audience)
 		if len(roles) == 0 {
-			// Still authenticated, but no app roles — later RequireRole will 403.
+			// Authenticated but no app roles — RequireRoles will 403 on protected writes.
 			roles = []string{}
 		}
 
@@ -95,6 +102,8 @@ func NewJWTAuth(cfg JWTConfig) (gin.HandlerFunc, error) {
 	}, nil
 }
 
+// RequireRoles returns 403 unless the JWT user has at least one of the allowed roles.
+// Must run after NewJWTAuth (needs authUser in context).
 func RequireRoles(allowed ...string) gin.HandlerFunc {
 	allowedSet := make(map[string]struct{}, len(allowed))
 	for _, role := range allowed {
@@ -125,6 +134,7 @@ func RequireRoles(allowed ...string) gin.HandlerFunc {
 	}
 }
 
+// extractRoles keeps only ADMIN/ANALYST from realm_access and resource_access claims.
 func extractRoles(claims *Claims, apiClientID string) []string {
 	seen := map[string]struct{}{}
 	var roles []string
@@ -152,7 +162,7 @@ func extractRoles(claims *Claims, apiClientID string) []string {
 			add(clientRoles.Roles)
 		}
 	}
-	// Also check frontend client roles if present.
+	// Also accept roles assigned on other clients (e.g. frontend client).
 	for clientID, access := range claims.ResourceAccess {
 		if clientID == apiClientID {
 			continue
@@ -172,7 +182,7 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-// TestAuth injects a fake authenticated user (for unit tests only).
+// TestAuth injects a fake authenticated user (for unit tests only — skips real JWKS).
 func TestAuth(user auth.User) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(auth.ContextUserKey, user)
@@ -181,6 +191,7 @@ func TestAuth(user auth.User) gin.HandlerFunc {
 	}
 }
 
+// UserFromContext returns the authenticated user set by NewJWTAuth / TestAuth.
 func UserFromContext(c *gin.Context) (auth.User, bool) {
 	raw, ok := c.Get(auth.ContextUserKey)
 	if !ok {

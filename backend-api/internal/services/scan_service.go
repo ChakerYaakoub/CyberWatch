@@ -10,6 +10,8 @@ import (
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
 
+// ScanService creates scan rows and dispatches async jobs to the worker.
+// It does not run scanners — that is the Python worker's job.
 type ScanService struct {
 	scans     *repositories.ScanRepository
 	companies *repositories.CompanyRepository
@@ -31,11 +33,13 @@ func NewScanService(
 	}
 }
 
+// CreateScanCommand is the input for starting a scan (from HTTP handler).
 type CreateScanCommand struct {
 	CompanyID   uint
-	RequestedBy string
+	RequestedBy string // usually JWT email
 }
 
+// Create inserts PENDING, publishes ScanJob, then marks QUEUED (or FAILED on publish error).
 func (s *ScanService) Create(input CreateScanCommand) (*models.Scan, error) {
 	if input.CompanyID == 0 {
 		return nil, ErrInvalidInput
@@ -49,6 +53,7 @@ func (s *ScanService) Create(input CreateScanCommand) (*models.Scan, error) {
 		return nil, err
 	}
 
+	// Persist first so the worker can update this row by scanId.
 	scan := &models.Scan{
 		CompanyID: input.CompanyID,
 		Status:    models.ScanStatusPending,
@@ -73,6 +78,7 @@ func (s *ScanService) Create(input CreateScanCommand) (*models.Scan, error) {
 		Attempt:     1,
 	}
 
+	// Dispatch to worker (HTTP /jobs or RabbitMQ) — implementation chosen at startup.
 	if err := s.publisher.Publish(job); err != nil {
 		log.Printf("scan job publish failed scanId=%d: %v", scan.ID, err)
 		_ = s.scans.UpdateStatus(scan.ID, models.ScanStatusFailed)

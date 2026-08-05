@@ -1,3 +1,5 @@
+// Package messaging defines how the API dispatches async scan jobs to workers.
+// Two implementations share ScanPublisher: HTTP (dev) and RabbitMQ (Compose default).
 package messaging
 
 import "time"
@@ -7,17 +9,17 @@ const (
 	ExchangeType   = "topic"
 )
 
-// Topology is loaded from environment (deploy-specific names).
+// Topology is loaded from environment (deploy-specific exchange/queue names).
 type Topology struct {
-	Exchange          string
+	Exchange           string
 	DeadLetterExchange string
-	Queue             string
-	DeadLetterQueue   string
-	RoutingKey        string
-	MaxAttempts       int
+	Queue              string
+	DeadLetterQueue    string
+	RoutingKey         string
+	MaxAttempts        int
 }
 
-// ScanJob is the versionable message published for async scans.
+// ScanJob is the JSON message the worker consumes (HTTP body or RabbitMQ payload).
 type ScanJob struct {
 	Version     int       `json:"version"`
 	ScanID      uint      `json:"scanId"`
@@ -28,7 +30,7 @@ type ScanJob struct {
 	Attempt     int       `json:"attempt,omitempty"`
 }
 
-// ScanPublisher dispatches scan jobs (HTTP worker or RabbitMQ).
+// ScanPublisher dispatches scan jobs. ScanService depends on this interface only.
 type ScanPublisher interface {
 	Publish(job ScanJob) error
 	Close() error

@@ -1,3 +1,5 @@
+// Package config loads and validates runtime settings from environment variables.
+// Prefer infrastructure/.env as the single source for local + Docker.
 package config
 
 import (
@@ -10,14 +12,15 @@ import (
 )
 
 const (
-	ScanModeHTTP     = "http"
-	ScanModeRabbitMQ = "rabbitmq"
+	ScanModeHTTP     = "http"     // API POSTs jobs to WORKER_URL/jobs
+	ScanModeRabbitMQ = "rabbitmq" // API publishes to RabbitMQ scan_jobs
 )
 
+// Config holds runtime settings from environment / infrastructure/.env.
 type Config struct {
 	AppPort    string
 	AppEnv     string
-	CORSOrigin string
+	CORSOrigin string // React origin allowed by CORS middleware
 	DBHost     string
 	DBPort     string
 	DBUser     string
@@ -27,20 +30,21 @@ type Config struct {
 
 	KeycloakURL      string
 	KeycloakRealm    string
-	KeycloakClientID string
+	KeycloakClientID string // API client used for JWKS / role audience hints
 
 	ScanMode    string
-	WorkerURL   string
-	RabbitMQURL string
+	WorkerURL   string // required when SCAN_MODE=http
+	RabbitMQURL string // required when SCAN_MODE=rabbitmq
 
-	RabbitExchange       string
-	RabbitQueue          string
-	RabbitDeadLetterEx   string
+	RabbitExchange        string
+	RabbitQueue           string
+	RabbitDeadLetterEx    string
 	RabbitDeadLetterQueue string
-	RabbitRoutingKey     string
-	RabbitMaxAttempts    int
+	RabbitRoutingKey      string
+	RabbitMaxAttempts     int
 }
 
+// Load reads .env files (if present), builds Config, and fail-fast on missing secrets.
 func Load() (*Config, error) {
 	loadDotEnv()
 
@@ -89,6 +93,7 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
+// DSN builds the PostgreSQL connection string for GORM.
 func (c *Config) DSN() string {
 	return fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
@@ -102,7 +107,7 @@ func (c *Config) DSN() string {
 }
 
 func loadDotEnv() {
-	// Single shared env: infrastructure/.env (also try CWD for Docker / overrides)
+	// Try paths for: repo root, backend-api cwd, and Docker working dir.
 	_ = godotenv.Load("infrastructure/.env")
 	_ = godotenv.Load("../infrastructure/.env")
 	_ = godotenv.Load(".env")

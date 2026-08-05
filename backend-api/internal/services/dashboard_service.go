@@ -7,9 +7,10 @@ import (
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
 
+// DashboardService aggregates counts/averages for the overview cards.
 type DashboardService struct {
-	companies      *repositories.CompanyRepository
-	scans          *repositories.ScanRepository
+	companies       *repositories.CompanyRepository
+	scans           *repositories.ScanRepository
 	vulnerabilities *repositories.VulnerabilityRepository
 }
 
@@ -45,6 +46,7 @@ func (s *DashboardService) GetStats() (*DashboardStats, error) {
 		return nil, err
 	}
 
+	// securityScore ≈ average risk_score of COMPLETED scans (0 if none).
 	avgScore, err := s.scans.AverageCompletedRiskScore()
 	if err != nil {
 		return nil, err

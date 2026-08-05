@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// DashboardHandler serves GET /api/dashboard overview stats.
 type DashboardHandler struct {
 	service *services.DashboardService
 }

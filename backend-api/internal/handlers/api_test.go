@@ -1,3 +1,5 @@
+// Package handlers_test contains HTTP integration-style tests for the API handlers.
+// Uses in-memory SQLite + TestAuth (no real Keycloak / Postgres required).
 package handlers_test
 
 import (
@@ -23,6 +25,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// setupTestRouter wires the real routes with SQLite and a fake ADMIN+ANALYST user.
 func setupTestRouter(t *testing.T) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -40,6 +43,7 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 
 	return routes.Setup("http://localhost:5173", routes.Handlers{
 		Companies: handlers.NewCompanyHandler(services.NewCompanyService(companyRepo)),
+		// NoopPublisher: create-scan still reaches QUEUED without a real worker/RabbitMQ.
 		Scans:     handlers.NewScanHandler(services.NewScanService(scanRepo, companyRepo, messaging.NoopPublisher{})),
 		Dashboard: handlers.NewDashboardHandler(services.NewDashboardService(companyRepo, scanRepo, vulnRepo)),
 	}, routes.AuthHooks{
@@ -52,6 +56,7 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	})
 }
 
+// decodeData unwraps the API success envelope {"data": ...}.
 func decodeData(t *testing.T, body *bytes.Buffer, dest any) {
 	t.Helper()
 	var envelope struct {

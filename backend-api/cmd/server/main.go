@@ -1,3 +1,4 @@
+// Command server is the CyberWatch Go API entrypoint (config → DB → JWT → routes).
 package main
 
 import (
@@ -16,6 +17,7 @@ import (
 )
 
 func main() {
+	// 1) Config from infrastructure/.env (or local env)
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("load config: %v", err)
@@ -25,6 +27,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// 2) PostgreSQL + schema
 	db, err := database.Connect(cfg.DSN(), cfg.AppEnv != "production")
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
@@ -34,6 +37,7 @@ func main() {
 		log.Fatalf("database migration failed: %v", err)
 	}
 
+	// 3) Keycloak JWKS verifier for /api/*
 	jwtAuth, err := middleware.NewJWTAuth(middleware.JWTConfig{
 		KeycloakURL: cfg.KeycloakURL,
 		Realm:       cfg.KeycloakRealm,
@@ -43,6 +47,7 @@ func main() {
 		log.Fatalf("keycloak jwt setup failed: %v", err)
 	}
 
+	// 4) Async scan transport (HTTP worker or RabbitMQ)
 	publisher, err := newScanPublisher(cfg)
 	if err != nil {
 		log.Fatalf("scan publisher setup failed: %v", err)
@@ -53,6 +58,7 @@ func main() {
 		}
 	}()
 
+	// 5) Manual DI: repo → service → handler → routes
 	companyRepo := repositories.NewCompanyRepository(db)
 	scanRepo := repositories.NewScanRepository(db)
 	vulnRepo := repositories.NewVulnerabilityRepository(db)
@@ -88,6 +94,7 @@ func main() {
 }
 
 func newScanPublisher(cfg *config.Config) (messaging.ScanPublisher, error) {
+	// SCAN_MODE selects the ScanPublisher implementation (same interface for ScanService).
 	switch cfg.ScanMode {
 	case config.ScanModeRabbitMQ:
 		log.Printf("scan transport: rabbitmq")

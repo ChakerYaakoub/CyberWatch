@@ -1,7 +1,9 @@
+// Package models defines GORM entities shared with the database schema.
 package models
 
 import "time"
 
+// ScanStatus lifecycle (API creates PENDING→QUEUED; worker sets RUNNING/COMPLETED/FAILED).
 type ScanStatus string
 
 const (
@@ -22,6 +24,7 @@ const (
 	SeverityCritical Severity = "CRITICAL"
 )
 
+// Company is a monitored organization (unique public domain).
 type Company struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:255;not null" json:"name"`
@@ -31,6 +34,7 @@ type Company struct {
 	Scans     []Scan    `gorm:"foreignKey:CompanyID" json:"scans,omitempty"`
 }
 
+// Scan is one analysis run for a company. risk_score is filled by the worker.
 type Scan struct {
 	ID              uint            `gorm:"primaryKey" json:"id"`
 	CompanyID       uint            `gorm:"not null;index" json:"companyId"`
@@ -44,6 +48,7 @@ type Scan struct {
 	Vulnerabilities []Vulnerability `gorm:"foreignKey:ScanID" json:"vulnerabilities,omitempty"`
 }
 
+// Vulnerability is a finding produced by the Python scanner for a scan.
 type Vulnerability struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	ScanID      uint      `gorm:"not null;index" json:"scanId"`

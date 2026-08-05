@@ -1,3 +1,4 @@
+// Package handlers adapts HTTP (Gin) to services. Keep thin: bind → call service → map errors.
 package handlers
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ScanHandler exposes scan list/get/create over /api/scans.
 type ScanHandler struct {
 	service *services.ScanService
 }
@@ -21,6 +23,7 @@ type createScanRequest struct {
 	CompanyID uint `json:"companyId" binding:"required"`
 }
 
+// Create starts an async scan and returns 202 Accepted with the QUEUED scan.
 func (h *ScanHandler) Create(c *gin.Context) {
 	var req createScanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -28,6 +31,7 @@ func (h *ScanHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// Prefer email from JWT for audit trail on the ScanJob.
 	requestedBy := "unknown"
 	if user, ok := middleware.UserFromContext(c); ok {
 		if user.Email != "" {
@@ -48,10 +52,11 @@ func (h *ScanHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Async acceptance — worker completes later via HTTP or RabbitMQ.
+	// Worker finishes later; client should poll GET /api/scans/:id.
 	response.JSON(c, http.StatusAccepted, scan)
 }
 
+// List returns all scans (newest first), including company preload from the repo.
 func (h *ScanHandler) List(c *gin.Context) {
 	scans, err := h.service.List()
 	if err != nil {
@@ -61,6 +66,7 @@ func (h *ScanHandler) List(c *gin.Context) {
 	response.JSON(c, http.StatusOK, scans)
 }
 
+// GetByID returns one scan with vulnerabilities (for Scan Details page + polling).
 func (h *ScanHandler) GetByID(c *gin.Context) {
 	id, err := parseID(c.Param("id"))
 	if err != nil {

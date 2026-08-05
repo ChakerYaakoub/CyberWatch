@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CORS allows the React origin (CORS_ORIGIN) to call the API with credentials/Bearer.
 func CORS(allowedOrigin string) gin.HandlerFunc {
 	return cors.New(cors.Config{
 		AllowOrigins:     []string{allowedOrigin},

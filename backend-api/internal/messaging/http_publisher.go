@@ -39,6 +39,7 @@ func (p *HTTPPublisher) Publish(job ScanJob) error {
 		return fmt.Errorf("marshal scan job: %w", err)
 	}
 
+	// Async HTTP so the API can return 202 without waiting for the worker.
 	go p.dispatch(payload, job.ScanID)
 	return nil
 }

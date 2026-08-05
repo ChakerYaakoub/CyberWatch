@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CompanyHandler exposes company CRUD over /api/companies (ADMIN for writes).
 type CompanyHandler struct {
 	service *services.CompanyService
 }
@@ -28,6 +29,7 @@ type updateCompanyRequest struct {
 	Domain string `json:"domain" binding:"required"`
 }
 
+// Create registers a new monitored company (201).
 func (h *CompanyHandler) Create(c *gin.Context) {
 	var req createCompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,6 +49,7 @@ func (h *CompanyHandler) Create(c *gin.Context) {
 	response.JSON(c, http.StatusCreated, company)
 }
 
+// List returns all companies ordered by created_at DESC.
 func (h *CompanyHandler) List(c *gin.Context) {
 	companies, err := h.service.List()
 	if err != nil {
@@ -56,6 +59,7 @@ func (h *CompanyHandler) List(c *gin.Context) {
 	response.JSON(c, http.StatusOK, companies)
 }
 
+// GetByID returns a single company or 404.
 func (h *CompanyHandler) GetByID(c *gin.Context) {
 	id, err := parseID(c.Param("id"))
 	if err != nil {
@@ -72,6 +76,7 @@ func (h *CompanyHandler) GetByID(c *gin.Context) {
 	response.JSON(c, http.StatusOK, company)
 }
 
+// Update changes name/domain with uniqueness checks.
 func (h *CompanyHandler) Update(c *gin.Context) {
 	id, err := parseID(c.Param("id"))
 	if err != nil {
@@ -97,6 +102,7 @@ func (h *CompanyHandler) Update(c *gin.Context) {
 	response.JSON(c, http.StatusOK, company)
 }
 
+// Delete removes the company and related scans/vulnerabilities (transaction in repo).
 func (h *CompanyHandler) Delete(c *gin.Context) {
 	id, err := parseID(c.Param("id"))
 	if err != nil {
@@ -120,6 +126,7 @@ func parseID(raw string) (uint, error) {
 	return uint(value), nil
 }
 
+// handleServiceError maps domain sentinel errors to HTTP status codes.
 func handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, services.ErrInvalidInput):

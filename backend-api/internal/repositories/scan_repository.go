@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// ScanRepository persists scan rows. Worker later updates status/score in the same table.
 type ScanRepository struct {
 	db *gorm.DB
 }
@@ -28,6 +29,7 @@ func (r *ScanRepository) FindAll() ([]models.Scan, error) {
 	return scans, err
 }
 
+// FindByID loads company + vulnerabilities (severity ordered CRITICAL → LOW).
 func (r *ScanRepository) FindByID(id uint) (*models.Scan, error) {
 	var scan models.Scan
 	err := r.db.
@@ -49,6 +51,7 @@ func (r *ScanRepository) UpdateStatus(id uint, status models.ScanStatus) error {
 	return r.db.Model(&models.Scan{}).Where("id = ?", id).Update("status", status).Error
 }
 
+// CountByStatuses powers dashboard "active scans" (PENDING/QUEUED/RUNNING).
 func (r *ScanRepository) CountByStatuses(statuses []models.ScanStatus) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.Scan{}).Where("status IN ?", statuses).Count(&count).Error

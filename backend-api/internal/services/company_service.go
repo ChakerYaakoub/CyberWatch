@@ -1,3 +1,4 @@
+// Package services holds business rules (validation, orchestration). No Gin types here.
 package services
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/cyberwatch/backend-api/internal/repositories"
 )
 
+// Sentinel errors — handlers map these to HTTP status codes.
 var (
 	ErrInvalidInput   = errors.New("invalid input")
 	ErrCompanyExists  = errors.New("company domain already exists")
@@ -30,13 +32,15 @@ type UpdateCompanyInput struct {
 	Domain string
 }
 
+// DashboardStats is the JSON payload for GET /api/dashboard.
 type DashboardStats struct {
-	SecurityScore          int   `json:"securityScore"`
-	Companies              int64 `json:"companies"`
-	ActiveScans            int64 `json:"activeScans"`
+	SecurityScore           int   `json:"securityScore"`
+	Companies               int64 `json:"companies"`
+	ActiveScans             int64 `json:"activeScans"`
 	CriticalVulnerabilities int64 `json:"criticalVulnerabilities"`
 }
 
+// CompanyService validates domains and enforces uniqueness before persistence.
 type CompanyService struct {
 	companies *repositories.CompanyRepository
 }
@@ -138,6 +142,7 @@ func (s *CompanyService) Delete(id uint) error {
 	return nil
 }
 
+// isValidDomain rejects URLs, paths, spaces, and raw IP literals — hostname only.
 func isValidDomain(domain string) bool {
 	if len(domain) > 253 || strings.Contains(domain, "://") || strings.ContainsAny(domain, "/ ") {
 		return false
@@ -145,7 +150,6 @@ func isValidDomain(domain string) bool {
 	if !domainRegex.MatchString(domain) {
 		return false
 	}
-	// Reject purely numeric hostnames that look like IPs unless they parse as IPs intentionally unused here.
 	if ip := net.ParseIP(domain); ip != nil {
 		return false
 	}
