@@ -124,6 +124,8 @@ Risk evolution and vulnerability distribution on a small screen.
 
 ## Status
 
+<div align="center">
+
 | Component | Status |
 |-----------|--------|
 | React frontend | **Done** |
@@ -135,6 +137,8 @@ Risk evolution and vulnerability distribution on a small screen.
 | Redis | [Planned](docs/PLANNED.md) |
 | Elasticsearch | [Planned](docs/PLANNED.md) |
 | CI/CD (GitHub Actions) | [Planned](docs/PLANNED.md) |
+
+</div>
 
 ---
 
@@ -178,10 +182,14 @@ flowchart TB
   WK -->|"update status + findings"| PG
 ```
 
+<div align="center">
+
 | Who | PostgreSQL role |
 |-----|-----------------|
 | **Go API** | Creates companies & scans · serves dashboard / lists / details |
 | **Python worker** | Updates scan status · writes vulnerabilities + risk score |
+
+</div>
 
 Same database — different operations.
 
@@ -198,6 +206,8 @@ flowchart LR
   API -.->|JWKS| KC
 ```
 
+<div align="center">
+
 | Service | Role | Port |
 |---------|------|------|
 | `frontend` | React UI (static build) | 5173 |
@@ -205,6 +215,8 @@ flowchart LR
 | `worker` | Python scanner (`python -m app.consumer` by default) | 8001\* |
 | `postgres` | Primary database | 5432 |
 | `rabbitmq` | Job queue + management UI | 5672 · 15672 |
+
+</div>
 
 \* Port `8001` is used when `SCAN_MODE=http` (uvicorn). With the default RabbitMQ consumer it is mapped but idle.
 
@@ -234,10 +246,14 @@ sequenceDiagram
   API->>FE: JSON response
 ```
 
+<div align="center">
+
 | Role | Permissions |
 |------|-------------|
 | `ADMIN` | Companies CRUD · create scans · view all |
 | `ANALYST` | View dashboard / companies / scans · create scans |
+
+</div>
 
 Setup guide: [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)
 
@@ -256,12 +272,18 @@ flowchart LR
 
 Statuses: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 
+<div align="center">
+
 | `SCAN_MODE` | Behavior |
 |-------------|----------|
 | `rabbitmq` (Compose default) | API publishes to RabbitMQ · worker runs `python -m app.consumer` |
 | `http` | API calls `WORKER_URL/jobs` · worker must run uvicorn |
 
+</div>
+
 ### API surface
+
+<div align="center">
 
 | Method | Path | Auth |
 |--------|------|------|
@@ -271,6 +293,8 @@ Statuses: `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` / `FAILED`
 | `GET/PUT/DELETE` | `/api/companies/:id` | JWT · write = ADMIN |
 | `GET/POST` | `/api/scans` | JWT · create = ADMIN or ANALYST |
 | `GET` | `/api/scans/:id` | JWT |
+
+</div>
 
 ### Data model
 
@@ -336,11 +360,15 @@ make start
 
 **3. Open**
 
+<div align="center">
+
 | URL | Service |
 |-----|---------|
 | http://localhost:5173 | Frontend |
 | http://localhost:8080/health | API health |
 | http://localhost:15672 | RabbitMQ UI |
+
+</div>
 
 **4. Stop / inspect**
 
