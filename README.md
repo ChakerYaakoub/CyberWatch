@@ -26,13 +26,13 @@ It lets security analysts:
 
 ## Demo video
 
-▶ [Watch the demo on YouTube](https://youtu.be/kTdNA7i3-G4)
+▶ <a href="https://youtu.be/kTdNA7i3-G4" target="_blank" rel="noopener noreferrer">Watch the demo on YouTube</a>
 
 ---
 
 ## Project article
 
-📝 [CyberWatch — External Attack Surface Monitoring Platform](https://yaakoub-chaker-bteit.web.app/news/cyberwatch-external-attack-surface-monitoring-platform-7eTnGIdh2vOV2gayBxIM)
+📝 <a href="https://yaakoub-chaker-bteit.web.app/news/cyberwatch-external-attack-surface-monitoring-platform-7eTnGIdh2vOV2gayBxIM" target="_blank" rel="noopener noreferrer">CyberWatch — External Attack Surface Monitoring Platform</a>
 
 Full write-up on my portfolio: architecture, stack, and what the platform does.
 
@@ -436,6 +436,6 @@ Licensed under the [MIT License](LICENSE). Redistribution must retain the copyri
 
 **Chaker Yaakoub**
 
-- Portfolio: [portfoliotypescript.web.app](https://portfoliotypescript.web.app/)
-- LinkedIn: [chaker-yaakoub](https://www.linkedin.com/in/chaker-yaakoub/)
-- GitHub: [ChakerYaakoub](https://github.com/ChakerYaakoub/)
+- Portfolio: <a href="https://portfoliotypescript.web.app/" target="_blank" rel="noopener noreferrer">portfoliotypescript.web.app</a>
+- LinkedIn: <a href="https://www.linkedin.com/in/chaker-yaakoub/" target="_blank" rel="noopener noreferrer">chaker-yaakoub</a>
+- GitHub: <a href="https://github.com/ChakerYaakoub/" target="_blank" rel="noopener noreferrer">ChakerYaakoub</a>
