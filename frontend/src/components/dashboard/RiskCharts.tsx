@@ -121,10 +121,11 @@ export function RiskCharts({
 
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? true;
   const chartHeight = useBreakpointValue({ base: 240, md: 280 }) ?? 240;
+  const circleChartHeight = useBreakpointValue({ base: 280, md: 320 }) ?? 280;
   const circleSize =
-    useBreakpointValue({ base: "120px", md: "160px" }) ?? "120px";
-  const pieInner = useBreakpointValue({ base: 42, md: 58 }) ?? 42;
-  const pieOuter = useBreakpointValue({ base: 70, md: 90 }) ?? 70;
+    useBreakpointValue({ base: "168px", md: "220px" }) ?? "168px";
+  const pieInner = useBreakpointValue({ base: 58, md: 78 }) ?? 58;
+  const pieOuter = useBreakpointValue({ base: 96, md: 120 }) ?? 96;
   const tickFont = isMobile ? 11 : 12;
   // Keep left margin positive so Y-axis numbers are never clipped
   const chartMargin = isMobile
@@ -324,19 +325,19 @@ export function RiskCharts({
           <Flex
             align="center"
             justify="center"
-            py={{ base: 3, md: 4 }}
-            minH={{ base: "160px", md: "220px" }}
+            py={{ base: 4, md: 6 }}
+            minH={{ base: "220px", md: "280px" }}
           >
             <CircularProgress
               value={averageScore}
               size={circleSize}
-              thickness="10px"
+              thickness="11px"
               color={scoreColor}
               trackColor="cyber.border"
             >
               <CircularProgressLabel>
                 <Text
-                  fontSize={{ base: "xl", md: "2xl" }}
+                  fontSize={{ base: "2xl", md: "3xl" }}
                   fontWeight="700"
                   fontFamily="mono"
                   lineHeight="1"
@@ -365,50 +366,76 @@ export function RiskCharts({
               No vulnerabilities yet
             </Text>
           ) : (
-            <ChartFrame height={chartHeight}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="count"
-                  nameKey="severity"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={pieInner}
-                  outerRadius={pieOuter}
-                  paddingAngle={2}
+            <Box position="relative">
+              <Flex
+                position="absolute"
+                inset={0}
+                align="center"
+                justify="center"
+                direction="column"
+                pointerEvents="none"
+                lineHeight="1"
+                zIndex={0}
+              >
+                <Text
+                  fontSize={{ base: "3xl", md: "4xl" }}
+                  fontWeight="700"
+                  fontFamily="mono"
+                  color="cyber.text"
                 >
-                  {pieData.map((entry) => (
-                    <Cell
-                      key={entry.severity}
-                      fill={
-                        chartColors[entry.severity] ??
-                        riskColorMap[entry.severity]
-                      }
+                  {totalFindings}
+                </Text>
+                <Text fontSize="xs" color="cyber.muted" mt={1}>
+                  total
+                </Text>
+              </Flex>
+              <Box position="relative" zIndex={1}>
+                <ChartFrame height={circleChartHeight}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="count"
+                      nameKey="severity"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={pieInner}
+                      outerRadius={pieOuter}
+                      paddingAngle={2}
+                    >
+                      {pieData.map((entry) => (
+                        <Cell
+                          key={entry.severity}
+                          fill={
+                            chartColors[entry.severity] ??
+                            riskColorMap[entry.severity]
+                          }
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      cursor={false}
+                      wrapperStyle={{ ...tooltipShell, zIndex: 2 }}
+                      contentStyle={tooltipShell}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const first = payload[0];
+                        if (!first) return null;
+                        return (
+                          <ChartTooltipBox panel={panel} border={grid}>
+                            <Text fontWeight="600" fontSize="sm">
+                              {String(first.name)}
+                            </Text>
+                            <Text fontSize="sm" fontFamily="mono" mt={1}>
+                              {Number(first.value)} findings
+                            </Text>
+                          </ChartTooltipBox>
+                        );
+                      }}
                     />
-                  ))}
-                </Pie>
-                <Tooltip
-                  cursor={false}
-                  wrapperStyle={tooltipShell}
-                  contentStyle={tooltipShell}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const first = payload[0];
-                    if (!first) return null;
-                    return (
-                      <ChartTooltipBox panel={panel} border={grid}>
-                        <Text fontWeight="600" fontSize="sm">
-                          {String(first.name)}
-                        </Text>
-                        <Text fontSize="sm" fontFamily="mono" mt={1}>
-                          {Number(first.value)} findings
-                        </Text>
-                      </ChartTooltipBox>
-                    );
-                  }}
-                />
-              </PieChart>
-            </ChartFrame>
+                  </PieChart>
+                </ChartFrame>
+              </Box>
+            </Box>
           )}
         </CardBody>
       </Card>
