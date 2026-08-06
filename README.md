@@ -45,9 +45,7 @@ Full write-up on my portfolio: architecture, stack, and what the platform does.
 Home view with company / critical stats, risk evolution, and vulnerability distribution.
 
 <p align="center">
-
-![Operations dashboard overview and charts](docs/screenshots/1.png)
-
+  <img src="docs/screenshots/1.png" alt="Operations dashboard overview and charts" width="900" />
 </p>
 
 ### Security score & findings by severity
@@ -55,9 +53,7 @@ Home view with company / critical stats, risk evolution, and vulnerability distr
 Average security score, findings donut with total count, and the needs-attention list.
 
 <p align="center">
-
-![Security score and findings by severity](docs/screenshots/2.png)
-
+  <img src="docs/screenshots/2.png" alt="Security score and findings by severity" width="900" />
 </p>
 
 ### Needs attention & recent activity
@@ -65,9 +61,7 @@ Average security score, findings donut with total count, and the needs-attention
 Priority queue for HIGH / CRITICAL assets and the latest scan runs.
 
 <p align="center">
-
-![Needs attention and recent activity](docs/screenshots/3.png)
-
+  <img src="docs/screenshots/3.png" alt="Needs attention and recent activity" width="900" />
 </p>
 
 ### Scan analysis — findings detail
@@ -75,9 +69,7 @@ Priority queue for HIGH / CRITICAL assets and the latest scan runs.
 Per-scan score, status, and vulnerability findings for a company domain.
 
 <p align="center">
-
-![Scan analysis findings detail](docs/screenshots/4.png)
-
+  <img src="docs/screenshots/4.png" alt="Scan analysis findings detail" width="900" />
 </p>
 
 ### Companies — manage assets & live scans
@@ -85,9 +77,7 @@ Per-scan score, status, and vulnerability findings for a company domain.
 Company table with latest scores, actions, and scans currently in progress.
 
 <p align="center">
-
-![Companies management and live scans](docs/screenshots/5.png)
-
+  <img src="docs/screenshots/5.png" alt="Companies management and live scans" width="900" />
 </p>
 
 ### About — what CyberWatch checks
@@ -95,9 +85,7 @@ Company table with latest scores, actions, and scans currently in progress.
 Product overview: DNS, HTTP, headers, technologies, ports, and risk scoring.
 
 <p align="center">
-
-![About CyberWatch features](docs/screenshots/6.png)
-
+  <img src="docs/screenshots/6.png" alt="About CyberWatch features" width="900" />
 </p>
 
 ### Mobile — operations overview
@@ -105,9 +93,7 @@ Product overview: DNS, HTTP, headers, technologies, ports, and risk scoring.
 Responsive home view: critical findings and risk trends on phone.
 
 <p align="center">
-
-<img src="docs/screenshots/phone1.png" alt="Mobile operations overview" width="320" />
-
+  <img src="docs/screenshots/phone1.png" alt="Mobile operations overview" width="320" />
 </p>
 
 ### Mobile — charts
@@ -115,9 +101,7 @@ Responsive home view: critical findings and risk trends on phone.
 Risk evolution and vulnerability distribution on a small screen.
 
 <p align="center">
-
-<img src="docs/screenshots/phone2.png" alt="Mobile charts view" width="320" />
-
+  <img src="docs/screenshots/phone2.png" alt="Mobile charts view" width="320" />
 </p>
 
 ---
