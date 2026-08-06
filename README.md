@@ -24,6 +24,104 @@ It lets security analysts:
 
 ---
 
+## Demo video
+
+▶ [Watch the demo on YouTube](https://youtu.be/kTdNA7i3-G4)
+
+---
+
+## Project article
+
+📝 [CyberWatch — External Attack Surface Monitoring Platform](https://yaakoub-chaker-bteit.web.app/news/cyberwatch-external-attack-surface-monitoring-platform-7eTnGIdh2vOV2gayBxIM)
+
+Full write-up on my portfolio: architecture, stack, and what the platform does.
+
+---
+
+## Screenshots
+
+### Operations dashboard — overview & charts
+
+Home view with company / critical stats, risk evolution, and vulnerability distribution.
+
+<p align="center">
+
+![Operations dashboard overview and charts](docs/screenshots/1.png)
+
+</p>
+
+### Security score & findings by severity
+
+Average security score, findings donut with total count, and the needs-attention list.
+
+<p align="center">
+
+![Security score and findings by severity](docs/screenshots/2.png)
+
+</p>
+
+### Needs attention & recent activity
+
+Priority queue for HIGH / CRITICAL assets and the latest scan runs.
+
+<p align="center">
+
+![Needs attention and recent activity](docs/screenshots/3.png)
+
+</p>
+
+### Scan analysis — findings detail
+
+Per-scan score, status, and vulnerability findings for a company domain.
+
+<p align="center">
+
+![Scan analysis findings detail](docs/screenshots/4.png)
+
+</p>
+
+### Companies — manage assets & live scans
+
+Company table with latest scores, actions, and scans currently in progress.
+
+<p align="center">
+
+![Companies management and live scans](docs/screenshots/5.png)
+
+</p>
+
+### About — what CyberWatch checks
+
+Product overview: DNS, HTTP, headers, technologies, ports, and risk scoring.
+
+<p align="center">
+
+![About CyberWatch features](docs/screenshots/6.png)
+
+</p>
+
+### Mobile — operations overview
+
+Responsive home view: critical findings and risk trends on phone.
+
+<p align="center">
+
+<img src="docs/screenshots/phone1.png" alt="Mobile operations overview" width="320" />
+
+</p>
+
+### Mobile — charts
+
+Risk evolution and vulnerability distribution on a small screen.
+
+<p align="center">
+
+<img src="docs/screenshots/phone2.png" alt="Mobile charts view" width="320" />
+
+</p>
+
+---
+
 ## Status
 
 | Component | Status |
