@@ -3,6 +3,7 @@
 ## External Attack Surface Monitoring Platform
 
 ![CyberWatch](https://img.shields.io/badge/Project-CyberWatch-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 ![React](https://img.shields.io/badge/Frontend-React%20TypeScript-61DAFB)
 ![Go](https://img.shields.io/badge/API-Go-00ADD8)
 ![Python](https://img.shields.io/badge/Worker-Python-3776AB)
@@ -296,3 +297,19 @@ Target future architecture and notes: **[`docs/PLANNED.md`](docs/PLANNED.md)**
 ## Objective
 
 Demonstrate a secure, distributed full-stack cybersecurity monitoring platform with an architecture close to real-world products.
+
+---
+
+## License & copyright
+
+Copyright (c) 2026 Chaker Yaakoub
+
+Licensed under the [MIT License](LICENSE). Redistribution must retain the copyright notice and license text.
+
+### Author
+
+**Chaker Yaakoub**
+
+- Portfolio: [portfoliotypescript.web.app](https://portfoliotypescript.web.app/)
+- LinkedIn: [chaker-yaakoub](https://www.linkedin.com/in/chaker-yaakoub/)
+- GitHub: [ChakerYaakoub](https://github.com/ChakerYaakoub/)
