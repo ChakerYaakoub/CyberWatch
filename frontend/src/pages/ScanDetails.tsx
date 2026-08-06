@@ -68,8 +68,8 @@ export function ScanDetails() {
     return (
       <VStack align="stretch" spacing={4}>
         <EmptyState title="Scan not found" description="This scan does not exist or was removed." />
-        <Button as={Link} to="/" variant="outline" alignSelf="flex-start">
-          Back to Dashboard
+        <Button as={Link} to="/companies" variant="outline" alignSelf="flex-start">
+          Back to companies
         </Button>
       </VStack>
     )
@@ -81,7 +81,7 @@ export function ScanDetails() {
   const inProgress = scan.status === 'PENDING' || scan.status === 'QUEUED' || scan.status === 'RUNNING'
 
   return (
-    <VStack align="stretch" spacing={6}>
+    <VStack align="stretch" spacing={{ base: 4, md: 6 }} w="full" minW={0}>
       {inProgress ? (
         <Box
           borderWidth="1px"
@@ -111,15 +111,15 @@ export function ScanDetails() {
           <Text fontSize="sm" color="cyber.muted">
             Scan Analysis
           </Text>
-          <Heading size="lg" letterSpacing="tight">
+          <Heading size={{ base: 'md', md: 'lg' }} letterSpacing="tight">
             {scan.companyName}
           </Heading>
-          <Text fontFamily="mono" color="brand.500">
+          <Text fontFamily="mono" color="brand.500" fontSize={{ base: 'sm', md: 'md' }} wordBreak="break-all">
             {scan.domain}
           </Text>
         </Stack>
-        <Button as={Link} to="/" variant="outline">
-          Back to Dashboard
+        <Button as={Link} to={`/companies/${scan.companyId}`} variant="outline" alignSelf={{ base: 'stretch', md: 'auto' }}>
+          Back to company
         </Button>
       </Flex>
 
@@ -145,7 +145,7 @@ export function ScanDetails() {
         <Card>
           <CardBody>
             <Text fontSize="sm" color="cyber.muted" mb={2}>
-              Security Score
+              Security score (this scan)
             </Text>
             <HStack justify="space-between" mb={2}>
               <Text fontFamily="mono" fontSize="2xl" fontWeight="700">
@@ -178,19 +178,21 @@ export function ScanDetails() {
           </Text>
         </CardHeader>
         <CardBody>
-          <Tabs variant="enclosed" colorScheme="brand">
-            <TabList>
-              <Tab>All ({sortedFindings.length})</Tab>
-              {severityOrder.map((level) => {
-                const count = sortedFindings.filter((f) => f.severity === level).length
-                if (count === 0) return null
-                return (
-                  <Tab key={level}>
-                    {level} ({count})
-                  </Tab>
-                )
-              })}
-            </TabList>
+          <Tabs variant="enclosed" colorScheme="brand" isLazy>
+            <Box overflowX="auto" maxW="100%" mb={2}>
+              <TabList flexWrap={{ base: 'nowrap', md: 'wrap' }} minW={{ base: 'max-content', md: 'auto' }}>
+                <Tab whiteSpace="nowrap">All ({sortedFindings.length})</Tab>
+                {severityOrder.map((level) => {
+                  const count = sortedFindings.filter((f) => f.severity === level).length
+                  if (count === 0) return null
+                  return (
+                    <Tab key={level} whiteSpace="nowrap">
+                      {level} ({count})
+                    </Tab>
+                  )
+                })}
+              </TabList>
+            </Box>
             <TabPanels>
               <TabPanel>
                 {sortedFindings.length === 0 ? (

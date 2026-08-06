@@ -57,6 +57,9 @@ export function buildRiskEvolution(scans: Scan[]): RiskEvolutionPoint[] {
   return completed.map((scan) => ({
     date: formatShortDate(scan.finishedAt ?? scan.createdAt),
     score: scan.riskScore ?? 0,
+    companyName: scan.company?.name ?? `Company #${scan.companyId}`,
+    domain: scan.company?.domain ?? '—',
+    scanId: scan.id,
   }))
 }
 

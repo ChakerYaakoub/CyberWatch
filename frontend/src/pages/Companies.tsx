@@ -2,12 +2,14 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   Flex,
   FormControl,
   FormLabel,
   Heading,
   HStack,
   Input,
+  Link as ChakraLink,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -29,8 +31,9 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, formatDate, LoadingState } from '../components/common/PageStates'
-import { StatusBadge } from '../components/common/StatusBadge'
+import { RiskBadge, StatusBadge } from '../components/common/StatusBadge'
 import {
   useCompanies,
   useCreateCompany,
@@ -38,15 +41,17 @@ import {
   useUpdateCompany,
 } from '../hooks/useCompanies'
 import { useAuth } from '../auth/useAuth'
-import { useCreateScan } from '../hooks/useScans'
+import { useCreateScan, useScans } from '../hooks/useScans'
 import { getErrorMessage } from '../services/api'
 import type { Company } from '../types'
+import { activeScans, buildCompanyOverviews } from '../utils/companyOverview'
 
 type FormMode = 'create' | 'edit'
 
 export function Companies() {
   const { isAdmin, isAnalyst } = useAuth()
   const { data: companies, isLoading, error } = useCompanies()
+  const scansQuery = useScans()
   const createCompany = useCreateCompany()
   const updateCompany = useUpdateCompany()
   const deleteCompany = useDeleteCompany()
@@ -165,11 +170,12 @@ export function Companies() {
       const scan = await createScan.mutateAsync(companyId)
       toast({
         title: 'Scan started',
-        description: `${companyName} scan is ${scan.status}.`,
+        description: `${companyName} scan #${scan.id} is ${scan.status}. See it below under Scans in progress.`,
         status: 'success',
         duration: 3000,
         isClosable: true,
       })
+      // Stay on Companies page — in-progress table updates via query invalidation
     } catch (err) {
       toast({
         title: 'Unable to start scan',
@@ -183,18 +189,20 @@ export function Companies() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || scansQuery.isLoading) {
     return <LoadingState label="Loading companies…" />
   }
 
-  if (error) {
-    return <ErrorState message={getErrorMessage(error)} />
+  if (error || scansQuery.error) {
+    return <ErrorState message={getErrorMessage(error ?? scansQuery.error)} />
   }
 
   const isSaving = createCompany.isPending || updateCompany.isPending
+  const overviews = buildCompanyOverviews(companies ?? [], scansQuery.data ?? [])
+  const inProgress = activeScans(scansQuery.data ?? [])
 
   return (
-    <VStack align="stretch" spacing={6}>
+    <VStack align="stretch" spacing={{ base: 4, md: 6 }} w="full" minW={0}>
       <Flex
         justify="space-between"
         align={{ base: 'stretch', sm: 'center' }}
@@ -202,11 +210,11 @@ export function Companies() {
         gap={3}
       >
         <Stack spacing={1}>
-          <Heading size="lg" letterSpacing="tight">
+          <Heading size={{ base: 'md', md: 'lg' }} letterSpacing="tight">
             Companies
           </Heading>
           <Text color="cyber.muted" fontSize="sm">
-            Manage organizations monitored by CyberWatch
+            Manage companies here — start a scan and watch progress in the table below
           </Text>
         </Stack>
         {isAdmin ? <Button onClick={openCreateModal}>Add Company</Button> : null}
@@ -214,35 +222,66 @@ export function Companies() {
 
       <Card>
         <CardBody>
-          {!companies || companies.length === 0 ? (
+          {overviews.length === 0 ? (
             <EmptyState
               title="No companies yet"
               description="Add a company to start monitoring its attack surface."
             />
           ) : (
-            <TableContainer>
-              <Table variant="simple" size="sm">
+            <TableContainer overflowX="auto" maxW="100%">
+              <Table variant="simple" size="sm" minW={{ base: '640px', md: 'auto' }}>
                 <Thead>
                   <Tr>
                     <Th>Name</Th>
                     <Th>Domain</Th>
-                    <Th>Created date</Th>
-                    <Th>Status</Th>
+                    <Th>Scans</Th>
+                    <Th>Latest status</Th>
+                    <Th>Latest score</Th>
                     <Th textAlign="right">Actions</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {companies.map((company) => (
-                    <Tr key={company.id} _hover={{ bg: 'blackAlpha.50' }}>
-                      <Td fontWeight="600">{company.name}</Td>
+                  {overviews.map((item) => (
+                    <Tr key={item.company.id} _hover={{ bg: 'blackAlpha.50' }}>
+                      <Td>
+                        <ChakraLink
+                          as={Link}
+                          to={`/companies/${item.company.id}`}
+                          color="brand.500"
+                          fontWeight="600"
+                          _hover={{ textDecoration: 'underline' }}
+                        >
+                          {item.company.name}
+                        </ChakraLink>
+                      </Td>
                       <Td fontFamily="mono" fontSize="sm" color="cyber.muted">
-                        {company.domain}
+                        {item.company.domain}
                       </Td>
                       <Td fontFamily="mono" fontSize="sm">
-                        {formatDate(company.createdAt)}
+                        {item.scanCount}
                       </Td>
                       <Td>
-                        <StatusBadge status="Active" />
+                        {item.latestScan ? (
+                          <StatusBadge status={item.latestScan.status} />
+                        ) : (
+                          <Text fontSize="sm" color="cyber.muted">
+                            Never scanned
+                          </Text>
+                        )}
+                      </Td>
+                      <Td>
+                        {item.latestCompleted ? (
+                          <HStack spacing={2}>
+                            <Text fontFamily="mono" fontSize="sm">
+                              {item.latestCompleted.securityScore}/100
+                            </Text>
+                            <RiskBadge level={item.latestCompleted.riskLevel} />
+                          </HStack>
+                        ) : (
+                          <Text fontSize="sm" color="cyber.muted">
+                            —
+                          </Text>
+                        )}
                       </Td>
                       <Td textAlign="right">
                         <HStack justify="flex-end" spacing={2}>
@@ -250,15 +289,20 @@ export function Companies() {
                             <Button
                               size="xs"
                               variant="outline"
-                              onClick={() => void handleStartScan(company.id, company.name)}
-                              isLoading={startingCompanyId === company.id}
+                              onClick={() => void handleStartScan(item.company.id, item.company.name)}
+                              isLoading={startingCompanyId === item.company.id}
+                              isDisabled={item.hasActiveScan}
                             >
                               Start Scan
                             </Button>
                           ) : null}
                           {isAdmin ? (
                             <>
-                              <Button size="xs" variant="ghost" onClick={() => openEditModal(company)}>
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => openEditModal(item.company)}
+                              >
                                 Edit
                               </Button>
                               <Button
@@ -266,13 +310,62 @@ export function Companies() {
                                 variant="ghost"
                                 color="red.300"
                                 _hover={{ bg: 'red.900', color: 'red.200' }}
-                                onClick={() => openDeleteModal(company)}
+                                onClick={() => openDeleteModal(item.company)}
                               >
                                 Delete
                               </Button>
                             </>
                           ) : null}
                         </HStack>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader pb={2}>
+          <Heading size="sm">Scans in progress</Heading>
+          <Text fontSize="sm" color="cyber.muted" mt={1}>
+            Live jobs on this page — start a scan above, status updates here
+          </Text>
+        </CardHeader>
+        <CardBody pt={0}>
+          {inProgress.length === 0 ? (
+            <Text fontSize="sm" color="cyber.muted" py={2}>
+              No scans running right now.
+            </Text>
+          ) : (
+            <TableContainer overflowX="auto" maxW="100%">
+              <Table variant="simple" size="sm" minW={{ base: '480px', md: 'auto' }}>
+                <Thead>
+                  <Tr>
+                    <Th>Company</Th>
+                    <Th>Domain</Th>
+                    <Th>Scan</Th>
+                    <Th>Status</Th>
+                    <Th>Date</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {inProgress.map((scan) => (
+                    <Tr key={scan.id} _hover={{ bg: 'blackAlpha.50' }}>
+                      <Td fontWeight="600">{scan.companyName}</Td>
+                      <Td fontFamily="mono" fontSize="sm" color="cyber.muted">
+                        {scan.domain}
+                      </Td>
+                      <Td fontFamily="mono" fontSize="sm">
+                        #{scan.id}
+                      </Td>
+                      <Td>
+                        <StatusBadge status={scan.status} />
+                      </Td>
+                      <Td fontFamily="mono" fontSize="sm">
+                        {formatDate(scan.date)}
                       </Td>
                     </Tr>
                   ))}

@@ -21,12 +21,12 @@ export function ProtectedRoute() {
   }, [isLoading, isAuthenticated, authError, login])
 
   if (isLoading) {
-    return <LoadingState label="Checking authentication…" />
+    return <LoadingState fullScreen label="Checking authentication…" />
   }
 
   if (authError) {
     return (
-      <VStack py={16} spacing={4}>
+      <VStack minH="100dvh" justify="center" spacing={4} px={4}>
         <Alert status="error" maxW="lg" borderRadius="md">
           <AlertIcon />
           {authError}
@@ -44,7 +44,7 @@ export function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <LoadingState label="Redirecting to Keycloak…" />
+    return <LoadingState fullScreen label="Redirecting to Keycloak…" />
   }
 
   return <Outlet />

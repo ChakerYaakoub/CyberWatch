@@ -47,7 +47,7 @@ export function AuthCallback() {
 
   if (error) {
     return (
-      <VStack py={16} spacing={4}>
+      <VStack minH="100dvh" justify="center" spacing={4} px={4}>
         <Alert status="error" maxW="lg" borderRadius="md">
           <AlertIcon />
           {error}
@@ -57,5 +57,5 @@ export function AuthCallback() {
     )
   }
 
-  return <LoadingState label="Completing Keycloak login…" />
+  return <LoadingState fullScreen label="Completing Keycloak login…" />
 }

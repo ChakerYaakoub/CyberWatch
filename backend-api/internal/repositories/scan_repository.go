@@ -22,8 +22,10 @@ func (r *ScanRepository) Create(scan *models.Scan) error {
 
 func (r *ScanRepository) FindAll() ([]models.Scan, error) {
 	var scans []models.Scan
+	// Preload findings so Home charts (severity distribution) and list mappers have data.
 	err := r.db.
 		Preload("Company").
+		Preload("Vulnerabilities").
 		Order("created_at DESC").
 		Find(&scans).Error
 	return scans, err

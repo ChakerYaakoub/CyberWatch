@@ -17,8 +17,10 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { to: '/', label: 'Dashboard', end: true },
+  { to: '/', label: 'Home', end: true },
   { to: '/companies', label: 'Companies', end: false },
+  { to: '/about', label: 'About', end: false },
+  { to: '/account', label: 'Account', end: false },
 ]
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
@@ -87,7 +89,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
-        <DrawerContent bg="chrome.bg" maxW="260px">
+        <DrawerContent bg="chrome.bg" maxW="260px" boxShadow="chrome.side">
           <CloseButton position="absolute" right={3} top={3} color="chrome.text" onClick={onClose} />
           <DrawerBody p={0}>
             <SidebarContent onNavigate={onClose} />

@@ -11,6 +11,7 @@ import {
   Avatar,
   Badge,
 } from '@chakra-ui/react'
+import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { BrandLogo } from './BrandLogo'
 import { ColorModeToggle } from './ColorModeToggle'
@@ -31,8 +32,10 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
       justify="space-between"
       px={{ base: 4, md: 6 }}
       bg="chrome.bg"
+      boxShadow="0 2px 10px rgba(11, 26, 46, 0.12)"
+      _dark={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.28)' }}
       flexShrink={0}
-      zIndex={10}
+      zIndex={1}
     >
       <HStack spacing={3}>
         <IconButton
@@ -56,7 +59,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
         </Text>
       </HStack>
 
-      <HStack spacing={2}>
+      <HStack spacing={{ base: 3, md: 5 }}>
         <ColorModeToggle />
 
         <Menu>
@@ -79,6 +82,14 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
             </HStack>
           </MenuButton>
           <MenuList bg="cyber.panel" borderColor="cyber.border">
+            <MenuItem
+              as={RouterLink}
+              to="/account"
+              bg="cyber.panel"
+              _hover={{ bg: 'cyber.panelAlt' }}
+            >
+              Account
+            </MenuItem>
             <MenuItem
               bg="cyber.panel"
               _hover={{ bg: 'cyber.panelAlt' }}

@@ -49,12 +49,23 @@ export const theme = extendTheme({
       'cyber.danger': { default: '#E30613', _dark: '#FF4D57' },
       'cyber.warning': { default: '#D97706', _dark: '#FBBF24' },
       'cyber.info': { default: '#0284C7', _dark: '#38BDF8' },
-      // Navbar / sidebar — deep navy chrome
-      'chrome.bg': { default: 'navy.800', _dark: 'navy.800' },
-      'chrome.text': { default: 'white', _dark: 'white' },
+      // Navbar / sidebar — navy chrome, subtly different per mode
+      'chrome.bg': { default: 'navy.700', _dark: 'navy.800' },
+      'chrome.border': { default: 'navy.600', _dark: 'navy.700' },
+      'chrome.text': { default: 'white', _dark: 'navy.50' },
       'chrome.muted': { default: 'whiteAlpha.700', _dark: 'whiteAlpha.700' },
-      'chrome.hover': { default: 'whiteAlpha.100', _dark: 'whiteAlpha.100' },
-      'chrome.active': { default: 'whiteAlpha.200', _dark: 'whiteAlpha.200' },
+      'chrome.hover': { default: 'whiteAlpha.200', _dark: 'whiteAlpha.100' },
+      'chrome.active': { default: 'whiteAlpha.300', _dark: 'whiteAlpha.200' },
+    },
+    shadows: {
+      'chrome.nav': {
+        default: '0 2px 10px rgba(11, 26, 46, 0.14)',
+        _dark: '0 2px 12px rgba(0, 0, 0, 0.35)',
+      },
+      'chrome.side': {
+        default: '4px 0 16px rgba(11, 26, 46, 0.12)',
+        _dark: '4px 0 18px rgba(0, 0, 0, 0.32)',
+      },
     },
   },
   fonts: {

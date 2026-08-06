@@ -10,6 +10,9 @@ export interface DashboardStats {
 export interface RiskEvolutionPoint {
   date: string
   score: number
+  companyName: string
+  domain: string
+  scanId: number
 }
 
 export interface VulnerabilityDistribution {

@@ -7,6 +7,15 @@ export function useScans() {
     queryKey: ['scans'],
     queryFn: getScans,
     select: (scans) => scans.map(toScanListItem),
+    // Keep Companies "in progress" table fresh without leaving the page
+    refetchInterval: (query) => {
+      const scans = query.state.data
+      if (!scans) return false
+      const busy = scans.some(
+        (s) => s.status === 'PENDING' || s.status === 'QUEUED' || s.status === 'RUNNING',
+      )
+      return busy ? 3000 : false
+    },
   })
 }
 

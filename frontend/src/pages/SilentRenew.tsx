@@ -10,5 +10,5 @@ export function SilentRenew() {
     })
   }, [])
 
-  return <LoadingState label="Renewing session…" />
+  return <LoadingState fullScreen label="Renewing session…" />
 }

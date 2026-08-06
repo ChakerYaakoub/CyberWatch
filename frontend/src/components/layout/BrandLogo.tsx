@@ -1,13 +1,21 @@
 import { Box, Text } from '@chakra-ui/react'
+import { Link as RouterLink } from 'react-router-dom'
 
 interface BrandLogoProps {
   compact?: boolean
 }
 
-/** Split logo: first half green, second half white/text */
+/** Split logo: first half green, second half white/text — always links to Home. */
 export function BrandLogo({ compact = false }: BrandLogoProps) {
   return (
-    <Box lineHeight="1.1">
+    <Box
+      as={RouterLink}
+      to="/"
+      lineHeight="1.1"
+      display="inline-block"
+      _hover={{ opacity: 0.9 }}
+      aria-label="CyberWatch home"
+    >
       <Text
         fontFamily="heading"
         fontWeight="800"
